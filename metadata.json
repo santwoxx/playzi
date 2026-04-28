@@ -1,0 +1,9 @@
+{
+  "name": "Playsi - Rede Social Gamer",
+  "description": "Conecte-se com gamers, descubra novos amigos, entre em comunidades exclusivas e viva a experiência social gamer definitiva.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

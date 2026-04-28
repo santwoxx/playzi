@@ -1,0 +1,287 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "nickname": { "type": "string" },
+        "age": { "type": "number" },
+        "region": { "type": "string" },
+        "country": { "type": "string" },
+        "interests": { "type": "string" },
+        "playStyle": { "type": "string", "enum": ["casual", "competitive", "duo", "squad"] },
+        "favoriteGames": { "type": "array", "items": { "type": "string" } },
+        "onboarded": { "type": "boolean" },
+        "friends": { "type": "array", "items": { "type": "string" } },
+        "followers": { "type": "array", "items": { "type": "string" } },
+        "following": { "type": "array", "items": { "type": "string" } },
+        "blocks": { "type": "array", "items": { "type": "string" } },
+        "privacyAgeHidden": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["online", "offline"] },
+        "xp": { "type": "number" },
+        "level": { "type": "number" },
+        "rankTitle": { "type": "string", "enum": ["Novato", "Pro Player", "Elite", "Legend", "Mythic"] },
+        "coins": { "type": "number" },
+        "gems": { "type": "number" },
+        "statusMessage": { "type": "string" },
+        "favoriteMusic": { "type": "string" },
+        "mood": { "type": "string" },
+        "currentGame": { "type": "string" },
+        "totalOnlineTime": { "type": "number" },
+        "medals": { "type": "array", "items": { "type": "string" } },
+        "achievements": { "type": "array", "items": { "type": "string" } },
+        "isAnonymous": { "type": "boolean" },
+        "rewards": {
+          "type": "object",
+          "properties": {
+            "installedApp": { "type": "boolean" },
+            "notificationsEnabled": { "type": "boolean" }
+          }
+        },
+        "privacySettings": {
+          "type": "object",
+          "properties": {
+            "whoCanMessage": { "type": "string", "enum": ["everyone", "friends", "friendsOfFriends", "nobody"] },
+            "blockScreenshots": { "type": "boolean" },
+            "hiddenChatsPin": { "type": "string" }
+          }
+        }
+      },
+      "required": ["uid", "xp", "level", "coins"]
+    },
+    "MinigameSession": {
+      "title": "MinigameSession",
+      "description": "A real-time minigame session state",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["quiz", "reflex", "rps", "guess", "duel"] },
+        "players": { "type": "array", "items": { "type": "string" } },
+        "state": { "type": "string", "enum": ["waiting", "playing", "finished"] },
+        "data": { "type": "object" },
+        "winner": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "type", "players", "state", "updatedAt"]
+    },
+    "InstantMatchRequest": {
+      "title": "InstantMatchRequest",
+      "description": "A request for a quick duo match",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "game": { "type": "string" },
+        "region": { "type": "string" },
+        "age": { "type": "number" },
+        "language": { "type": "string" },
+        "status": { "type": "string", "enum": ["searching", "matched", "expired"] },
+        "matchedWith": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "game", "region", "status", "createdAt"]
+    },
+    "Community": {
+      "title": "Community",
+      "description": "A gaming community group",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "icon": { "type": "string" }
+      },
+      "required": ["id", "name", "category"]
+    },
+    "VoiceRoom": {
+      "title": "VoiceRoom",
+      "description": "A voice communication room within a community",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "communityId": { "type": "string" },
+        "name": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "communityId", "name", "participants"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A post shared by a user (photo or video)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "userPhotoURL": { "type": "string" },
+        "type": { "type": "string", "enum": ["image", "video"] },
+        "mediaUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "commentCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "type", "mediaUrl", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "postId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "userPhotoURL": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "postId", "userId", "text", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A conversation between two users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "security": {
+          "type": "object",
+          "properties": {
+            "isEncrypted": { "type": "boolean" },
+            "isTemporary": { "type": "boolean" },
+            "autoDelete24h": { "type": "boolean" },
+            "isHidden": { "type": "boolean" },
+            "isAnonymous": { "type": "boolean" },
+            "encryptionKey": { "type": "string" }
+          }
+        },
+        "mutedBy": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "participants", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A message within a chat",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "chatId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "isEncrypted": { "type": "boolean" },
+        "isAnonymous": { "type": "boolean" },
+        "senderName": { "type": "string" },
+        "senderPhoto": { "type": "string" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "viewed": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "chatId", "senderId", "text", "createdAt"]
+    },
+    "LiveStream": {
+      "title": "LiveStream",
+      "description": "A live streaming session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "channelName": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "isLive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "viewersCount": { "type": "number" }
+      },
+      "required": ["id", "channelName", "userId", "username", "isLive", "createdAt"]
+    },
+    "Call": {
+      "title": "Call",
+      "description": "A 1-1 video or voice call signaling session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "callerId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["calling", "accepted", "rejected", "ended"] },
+        "type": { "type": "string", "enum": ["voice", "video"] },
+        "offer": { "type": "object" },
+        "answer": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "callerId", "receiverId", "participants", "status", "type", "createdAt"]
+    },
+    "IceCandidate": {
+      "title": "IceCandidate",
+      "description": "WebRTC ICE Candidate for signaling",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "candidate": { "type": "object" },
+        "senderId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "candidate", "senderId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Main feed posts"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Comments attached to posts"
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Chat sessions"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Individual messages in a chat"
+    },
+    "/communities/{communityId}": {
+      "schema": { "$ref": "#/entities/Community" },
+      "description": "Gaming communities"
+    },
+    "/communities/{communityId}/voiceRooms/{roomId}": {
+      "schema": { "$ref": "#/entities/VoiceRoom" },
+      "description": "Voice channels within a community"
+    },
+    "/minigameSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/MinigameSession" },
+      "description": "Real-time minigame sessions"
+    },
+    "/instantMatchRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/InstantMatchRequest" },
+      "description": "Short-lived matching requests"
+    },
+    "/lives/{liveId}": {
+      "schema": { "$ref": "#/entities/LiveStream" },
+      "description": "Live streaming sessions"
+    },
+    "/calls/{callId}": {
+      "schema": { "$ref": "#/entities/Call" },
+      "description": "1-1 signaling sessions"
+    },
+    "/calls/{callId}/candidates/{candidateId}": {
+      "schema": { "$ref": "#/entities/IceCandidate" },
+      "description": "ICE signaling candidates"
+    }
+  }
+}
