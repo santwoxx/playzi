@@ -101,10 +101,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         if (!userDoc.exists()) {
+          const nameFallback = firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : firebaseUser.email?.split('@')[0] || 'User');
           const newUser: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || null,
-            displayName: firebaseUser.displayName || (firebaseUser.isAnonymous ? 'Visitante' : firebaseUser.email?.split('@')[0] || 'User'),
+            displayName: nameFallback,
+            nickname: nameFallback.slice(0, 32),
             photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${firebaseUser.isAnonymous ? 'Guest' : firebaseUser.email || 'User'}&background=0D0E12&color=fff`,
             bio: '',
             onboarded: false,
