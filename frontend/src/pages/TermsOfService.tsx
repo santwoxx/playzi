@@ -9,7 +9,7 @@ export default function TermsOfService() {
 
   return (
     <div className="pt-20 pb-20 px-4 md:pt-24 min-h-screen bg-vibe-bg gaming-grid">
-      <SEO title="Termos de Uso" description="Regras e diretrizes para uma convivência épica na Playzi." />
+      <SEO title="Termos de Uso - Playzi" description="Leia os termos de uso da Playzi. Regras e diretrizes para uma convivencia segura e divertida na maior rede social gamer do Brasil." url="https://playzi.app.br/terms" breadcrumbs={[{ name: 'Termos', url: '/terms' }]} />
       
       <div className="max-w-2xl mx-auto">
         <button 

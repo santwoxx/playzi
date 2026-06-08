@@ -87,6 +87,10 @@ export default function CommunityLanding() {
         keywords={data.keywords} 
         url={`https://playzi.app.br/comunidades/${slug}`}
         schema={communitySchema}
+        breadcrumbs={[
+          { name: 'Comunidades', url: '/communities' },
+          { name: data.h1, url: `/comunidades/${slug}` }
+        ]}
       />
       
       <div className="max-w-4xl mx-auto">

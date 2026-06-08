@@ -26,11 +26,14 @@ export default function Blog() {
   return (
     <div className="pt-20 pb-20 px-4 min-h-screen bg-vibe-bg gaming-grid">
       <SEO 
-        title="Blog Gamer - Dicas, Squads e Comunidades" 
-        description="Fique por dentro das melhores dicas sobre como encontrar squad, melhores jogos para fazer amigos e novidades das comunidades online gamers na Playzi." 
-        keywords="blog gamer, dicas free fire, squads roblox, comunidades online brasil"
+        title="Blog Gamer - Dicas de Free Fire, Roblox e Comunidades" 
+        description="Fique por dentro das melhores dicas sobre como encontrar squad para Free Fire, melhores jogos para fazer amigos online, comunidades gamers e novidades do mundo dos games. Seu blog gamer favorito do Brasil." 
+        keywords="blog gamer, dicas free fire, squads roblox, comunidades online brasil, como encontrar squad, jogos para fazer amigos"
         url="https://playzi.app.br/blog"
         schema={blogSchema}
+        breadcrumbs={[
+          { name: 'Blog', url: '/blog' }
+        ]}
       />
       
       <div className="max-w-5xl mx-auto">

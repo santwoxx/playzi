@@ -35,6 +35,7 @@ const Explore = lazy(() => import('./pages/Explore'));
 const Reels = lazy(() => import('./pages/Reels'));
 const Encontros = lazy(() => import('./pages/Encontros'));
 const Guidelines = lazy(() => import('./pages/Guidelines'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 const PlayNow = lazy(() => import('./pages/PlayNow'));
 const WatchParty = lazy(() => import('./pages/WatchParty'));
 const BrowserSync = lazy(() => import('./pages/BrowserSync'));
@@ -287,7 +288,7 @@ function AuthenticatedApp() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/profile/:userId" element={<Profile />} />
                 <Route path="/onboarding" element={<Navigate to="/" />} />
-                <Route path="*" element={<Navigate to="/" />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>

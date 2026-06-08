@@ -35,8 +35,10 @@ export default function Guidelines() {
   return (
     <div className="pt-24 pb-20 px-4 min-h-screen bg-vibe-bg gaming-grid">
       <SEO 
-        title="Diretrizes da Comunidade" 
-        description="Regras de participação e segurança na Playzi. Mantendo nossa comunidade gamer segura, inclusiva e respeitosa." 
+        title="Diretrizes da Comunidade Gamer Playzi" 
+        description="Regras de participacao e seguranca na Playzi. Mantendo nossa comunidade gamer segura, inclusiva e respeitosa para todos os jogadores do Brasil." 
+        url="https://playzi.app.br/diretrizes"
+        breadcrumbs={[{ name: 'Diretrizes', url: '/diretrizes' }]}
       />
       
       <div className="max-w-3xl mx-auto">

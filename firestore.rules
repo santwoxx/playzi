@@ -117,14 +117,21 @@ service cloud.firestore {
       }
     }
 
-    // Chats (Server-Only Writes)
+    // Chats
     match /chats/{chatId} {
       allow read: if isSignedIn() && (request.auth.uid in existing().participants);
-      allow write: if false; // Only Backend via Vercel
+      allow create: if isSignedIn() && (request.auth.uid in incoming().participants) && incoming().participants.size() <= 10;
+      allow update: if isSignedIn() && (request.auth.uid in existing().participants) &&
+                     incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'updatedAt', 'mutedBy', 'security']);
+      allow delete: if isSignedIn() && (request.auth.uid in existing().participants);
 
       match /messages/{messageId} {
         allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
-        allow write: if false; // Only Backend via Vercel
+        allow create: if isSignedIn() &&
+                       (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants) &&
+                       incoming().senderId == request.auth.uid &&
+                       incoming().text is string && incoming().text.size() <= 2000;
+        allow delete: if isSignedIn() && isOwner(existing().senderId);
       }
     }
 

@@ -22,10 +22,15 @@ const CallContext = createContext<CallContextType | undefined>(undefined);
 export function CallProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   const webRTC = useWebRTC(currentUser?.uid || '');
-  const [ringtone] = useState(new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_51c6b1b702.mp3')); // Gaming style ringtone
+  const [ringtone] = useState(() => {
+    const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_51c6b1b702.mp3');
+    audio.loop = true;
+    audio.preload = 'none';
+    audio.crossOrigin = 'anonymous';
+    return audio;
+  });
 
   useEffect(() => {
-    ringtone.loop = true;
     if (webRTC.isIncomingCall || (webRTC.isCalling && webRTC.currentCall?.status === 'calling')) {
       ringtone.play().catch(e => console.log('Autoplay blocked:', e));
     } else {

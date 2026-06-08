@@ -92,11 +92,14 @@ export default function Explore() {
   return (
     <div className="pt-20 pb-24 px-4 max-w-7xl mx-auto">
       <SEO 
-        title="Explorar Chat de Vídeo e Encontros Gamer" 
-        description="Descubra novos gamers para chat de vídeo 1v1, hashtags em alta e os conteúdos mais populares. Conheça pessoas novas na melhor alternativa gamer ao Omegle e MeetMe." 
-        keywords="explorar gamers, hashtags gamer, chat de vídeo aleatório, squads free fire"
+        title="Explorar - Descubra Gamers e Conteudo" 
+        description="Descubra novos gamers, hashtags em alta e os conteudos mais populares da comunidade. Encontre squads de Free Fire, amigos para Roblox e muito mais na maior rede social gamer do Brasil." 
+        keywords="explorar gamers, hashtags gamer, descobrir jogadores, comunidade gamer online"
         url="https://playzi.app.br/explore"
         schema={breadcrumbSchema}
+        breadcrumbs={[
+          { name: 'Explorar', url: '/explore' }
+        ]}
       />
       
       <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-8">

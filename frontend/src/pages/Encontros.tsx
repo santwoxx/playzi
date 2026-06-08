@@ -256,7 +256,7 @@ export default function Encontros() {
   if (!hasEnoughPhotos) {
     return (
       <div className="pt-24 pb-20 px-6 min-h-screen bg-vibe-bg gaming-grid flex flex-col items-center justify-center text-center">
-         <SEO title="Encontros - Adicione Fotos" />
+         <SEO title="Encontros - Adicione Fotos ao Perfil" description="Adicione fotos ao seu perfil para comecar a dar match com outros gamers na Playzi." />
          <div className="vibe-card p-8 max-w-sm">
             <div className="w-20 h-20 bg-vibe-neon-blue/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
                <Camera className="w-10 h-10 text-vibe-neon-blue" />
@@ -278,7 +278,7 @@ export default function Encontros() {
 
   return (
     <div className="pt-20 pb-20 px-4 md:pt-24 min-h-screen bg-vibe-bg gaming-grid flex flex-col">
-      <SEO title="Encontros Gamer" description="Dê match com pessoas perto de você e encontre seu duos ou squad." />
+      <SEO title="Encontros Gamer - Match com Gamers no Brasil" description="Dê match com gamers perto de voce no Playzi Encontros! App de relacionamento para quem ama jogos: Free Fire, Roblox, Minecraft e mais. Encontre seu duo para rankeada ou seu par perfeito. Alternativa ao Tinder para gamers." keywords="encontros gamers, tinder gamer, matchmaking amoroso, app namoro gamer, encontrar duo free fire" url="https://playzi.app.br/encontros" />
       
       {/* Header */}
       <div className="flex items-center justify-between mb-8 max-w-md mx-auto w-full px-2">

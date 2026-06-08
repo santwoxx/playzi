@@ -32,9 +32,9 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-vibe-bg flex flex-col relative overflow-x-hidden overflow-y-auto">
       <SEO 
-        title="Chat de Vídeo 1v1, Encontro Gamer e Comunidade" 
-        description="Entre na Playzi, a maior rede social gamer para chat de vídeo 1v1, matchmaking e amizades. Encontre seu duo para rankeada e squads de Free Fire, Roblox e mais." 
-        keywords="omegle gamer, tinder gamer, chat de vídeo jogos, conhecer pessoas gamer"
+        title="Playzi Login - Chat de Video 1v1, Encontros e Comunidade Gamer" 
+        description="Entre na Playzi, a maior rede social gamer do Brasil. Chat de video 1v1 gratis, matchmaking para Free Fire e Roblox, encontros gamers e comunidades de jogos. Conecte-se com milhares de gamers ativos. Alternativa ao Omegle, OmeTV e Litmatch." 
+        keywords="playzi login, entrar playzi, chat video gamer, rede social gamer, alternativa omegle, encontros gamers, criar conta gamer"
       />
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
         {/* Background Decorative Elements */}

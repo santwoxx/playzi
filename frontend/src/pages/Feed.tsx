@@ -373,11 +373,14 @@ export default function Feed() {
   return (
     <div className="bg-vibe-bg">
       <SEO 
-        title="Chat de Vídeo Gamer, Matchmaking e Squads Grátis" 
-        description="Playzi é a melhor rede social gamer do Brasil. Chat de vídeo 1v1, matchmaking para Free Fire e Roblox, e comunidades de jogos. Conheça pessoas novas e encontre seu duo!" 
-        keywords="chat gamer, matchmaking brasil, squad free fire, amigos roblox, amizades online brasil, badoo gamer"
+        title="Playzi - Chat de Video Gamer, Matchmaking e Squad Gratis" 
+        description="Playzi e a maior rede social gamer do Brasil. Chat de video 1v1, matchmaking para Free Fire e Roblox, encontros gamers e comunidades de jogos. Conheca pessoas novas, encontre seu duo e nunca mais jogue sozinho! Alternativa ao Omegle e OmeTV." 
+        keywords="chat gamer, matchmaking brasil, squad free fire, amigos roblox, amizades online brasil, alternativa omegle, rede social gamer"
         url="https://playzi.app.br/"
         schema={homeSchema}
+        breadcrumbs={[
+          { name: 'Home', url: '/' }
+        ]}
       />
       
       <h1 className="sr-only">Playzi - Feed da Comunidade Gamer</h1>

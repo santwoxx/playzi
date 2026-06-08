@@ -78,9 +78,13 @@ export default function Arcade() {
   return (
     <div className="pt-6 pb-nav min-h-screen gaming-grid px-6 relative">
       <SEO 
-        title="Arcade - Jogue e Ganhe Moedas" 
-        description="Divirta-se com minigames exclusivos na Playzi. Desafie o ranking global, ganhe coins e desbloqueie recompensas raras no arcade gamer." 
-        keywords="mini games online, jogos arcade grátis, ganhar coins jogando, ranking gamer"
+        title="Arcade - Mini Games Online Gratis para Jogar" 
+        description="Jogue minigames exclusivos na Playzi Arcade! Gamer Quiz, Desafio Reflexo, Jokenpo e mais. Desafie seus amigos, ganhe coins e suba no ranking. Mini games online gratis para gamers brasileiros." 
+        keywords="mini games online, jogos arcade gratis, gamer quiz, desafio reflexo, jogar com amigos online, jogos navegador gratis"
+        url="https://playzi.app.br/arcade"
+        breadcrumbs={[
+          { name: 'Arcade', url: '/arcade' }
+        ]}
       />
       <div className="max-w-2xl mx-auto space-y-8">
         <header>

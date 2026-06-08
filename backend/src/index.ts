@@ -407,29 +407,48 @@ app.post('/api/sendMessage', async (req, res) => {
 function getSitemapXml() {
   const baseUrl = 'https://playzi.app.br';
   
-  // Dynamic data (Mocks for now, can be fetched from Firebase later)
-  const communities = ['freefire', 'roblox', 'minecraft', 'gta', 'dating', 'friendship'];
+  const communities = ['freefire', 'roblox', 'minecraft', 'gta', 'dating', 'friendship', 'valorant', 'lol', 'fortnite', 'cod'];
   const blogPosts = [
-    'como-encontrar-squad-free-fire-roblox',
-    'melhores-jogos-para-fazer-amigos-online',
-    'importancia-das-comunidades-online-gamers'
+    { slug: 'como-encontrar-squad-free-fire-roblox', date: '2026-05-02' },
+    { slug: 'melhores-jogos-para-fazer-amigos-online', date: '2026-05-01' },
+    { slug: 'importancia-das-comunidades-online-gamers', date: '2026-04-30' },
+    { slug: 'app-para-conhecer-gamers-brasil', date: '2026-05-15' },
+    { slug: 'alternativa-omegle-gratis-2026', date: '2026-05-10' },
+    { slug: 'como-fazer-amizades-online-jogando', date: '2026-04-25' },
+    { slug: 'melhores-apps-namoro-gamer-2026', date: '2026-04-20' },
+    { slug: 'dicas-para-melhorar-ranking-free-fire', date: '2026-04-15' },
+    { slug: 'grupos-whatsapp-vs-playzi', date: '2026-04-10' },
+    { slug: 'video-chat-gratis-sem-cadastro', date: '2026-04-05' }
   ];
+  const arcadeGames = ['quiz', 'reflex', 'rps', 'guess', 'duel'];
 
   const today = new Date().toISOString().split('T')[0];
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <!-- Main Pages -->
   <url>
     <loc>${baseUrl}/</loc>
     <lastmod>${today}</lastmod>
     <priority>1.0</priority>
     <changefreq>daily</changefreq>
+    <image:image>
+      <image:loc>https://i.ibb.co/svpJKdbx/playsi-logo.png</image:loc>
+      <image:title>Playzi - Rede Social Gamer</image:title>
+    </image:image>
   </url>
   <url>
     <loc>${baseUrl}/explore</loc>
     <lastmod>${today}</lastmod>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
+    <loc>${baseUrl}/reels</loc>
+    <lastmod>${today}</lastmod>
+    <priority>0.7</priority>
     <changefreq>daily</changefreq>
   </url>
   <url>
@@ -445,6 +464,12 @@ function getSitemapXml() {
     <changefreq>daily</changefreq>
   </url>
   <url>
+    <loc>${baseUrl}/chat/global</loc>
+    <lastmod>${today}</lastmod>
+    <priority>0.7</priority>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
     <loc>${baseUrl}/blog</loc>
     <lastmod>${today}</lastmod>
     <priority>0.9</priority>
@@ -453,15 +478,42 @@ function getSitemapXml() {
   <url>
     <loc>${baseUrl}/encontros</loc>
     <lastmod>${today}</lastmod>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
     <changefreq>daily</changefreq>
   </url>
   <url>
     <loc>${baseUrl}/jogar-agora</loc>
     <lastmod>${today}</lastmod>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
     <changefreq>daily</changefreq>
   </url>
+  <url>
+    <loc>${baseUrl}/watch</loc>
+    <lastmod>${today}</lastmod>
+    <priority>0.7</priority>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
+    <loc>${baseUrl}/rankings</loc>
+    <lastmod>${today}</lastmod>
+    <priority>0.7</priority>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
+    <loc>${baseUrl}/users</loc>
+    <lastmod>${today}</lastmod>
+    <priority>0.5</priority>
+    <changefreq>daily</changefreq>
+  </url>
+
+  <!-- Arcade Games -->
+  ${arcadeGames.map(game => `
+  <url>
+    <loc>${baseUrl}/arcade/${game}</loc>
+    <lastmod>${today}</lastmod>
+    <priority>0.6</priority>
+    <changefreq>weekly</changefreq>
+  </url>`).join('')}
 
   <!-- Communities -->
   ${communities.map(slug => `
@@ -473,22 +525,32 @@ function getSitemapXml() {
   </url>`).join('')}
 
   <!-- Blog Posts -->
-  ${blogPosts.map(slug => `
+  ${blogPosts.map(post => `
   <url>
-    <loc>${baseUrl}/blog/${slug}</loc>
-    <lastmod>${today}</lastmod>
+    <loc>${baseUrl}/blog/${post.slug}</loc>
+    <lastmod>${post.date}</lastmod>
     <priority>0.7</priority>
     <changefreq>monthly</changefreq>
   </url>`).join('')}
 
   <!-- Policies -->
   <url>
+    <loc>${baseUrl}/diretrizes</loc>
+    <lastmod>${today}</lastmod>
+    <priority>0.4</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>${baseUrl}/privacy</loc>
+    <lastmod>2025-01-01</lastmod>
     <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
   </url>
   <url>
     <loc>${baseUrl}/terms</loc>
+    <lastmod>2025-01-01</lastmod>
     <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
   </url>
 </urlset>`;
 }

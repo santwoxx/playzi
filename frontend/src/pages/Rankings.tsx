@@ -5,6 +5,7 @@ import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestor
 import { db } from '../lib/firebase';
 import { User } from '../types';
 import { cn } from '../lib/utils';
+import SEO from '../components/SEO';
 
 export default function Rankings() {
   const [topUsers, setTopUsers] = useState<User[]>([]);
@@ -18,8 +19,25 @@ export default function Rankings() {
     });
   }, []);
 
+  const rankingsSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Ranking Global de Gamers Playzi",
+    "description": "Hall da Fama da Playzi com os maiores xp do multiverso gamer."
+  };
+
   return (
     <div className="pt-6 pb-nav min-h-screen bg-vibe-bg gaming-grid px-6">
+      <SEO 
+        title="Ranking Global e Hall da Fama dos Gamers" 
+        description="Veja o ranking global da Playzi! Os maiores xp, nives e conquistas dos gamers brasileiros. Suba no ranking, ganhe recompensas e se torne uma lenda no Hall da Fama." 
+        keywords="ranking gamer, hall da fama, maior xp, top jogadores brasil, leaderboard"
+        url="https://playzi.app.br/rankings"
+        schema={rankingsSchema}
+        breadcrumbs={[
+          { name: 'Rankings', url: '/rankings' }
+        ]}
+      />
       <div className="max-w-2xl mx-auto space-y-8">
         <header>
           <motion.h1 

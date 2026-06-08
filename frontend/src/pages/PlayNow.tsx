@@ -56,9 +56,10 @@ export default function PlayNow() {
   return (
     <div className="pt-6 pb-nav min-h-screen px-4 sm:px-6 relative gaming-grid">
       <SEO 
-        title="Jogar Agora - Tryhard Academy no Playzi" 
-        description="Jogue Tryhard Academy diretamente na Playzi! Divirta-se com seu squad, desafie o ranking nacional e melhore seu gameplay no melhor portal gamer."
-        keywords="jogar online, tryhard academy, games de navegador, jogar gratis, playzi arcade"
+        title="Jogar Agora - Jogos Online Gratis com Amigos" 
+        description="Jogue gratis agora na Playzi! Tryhard Academy e minigames online. Desafie seus amigos, suba no ranking e ganhe recompensas. O melhor portal de jogos de navegador para gamers brasileiros."
+        keywords="jogar agora, jogos online gratis, jogar com amigos, tryhard academy, jogos navegador"
+        url="https://playzi.app.br/jogar-agora"
       />
 
       <div className="max-w-4xl mx-auto space-y-6">

@@ -22,9 +22,24 @@ export default function BlogPost() {
     );
   }
 
-  // Calculate read time (rough estimate: 200 words per minute)
   const wordCount = post.content.split(/\s+/).length;
   const readTime = Math.ceil(wordCount / 200);
+
+  const parseDateToISO = (dateStr: string): string => {
+    const months: Record<string, string> = {
+      'janeiro': '01', 'fevereiro': '02', 'marco': '03', 'abril': '04',
+      'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
+      'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'
+    };
+    const match = dateStr.match(/(\d+)\s+de\s+(\w+)\s+de\s+(\d+)/i);
+    if (match) {
+      const day = match[1].padStart(2, '0');
+      const month = months[match[2].toLowerCase()] || '01';
+      const year = match[3];
+      return `${year}-${month}-${day}`;
+    }
+    return '2026-05-01';
+  };
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -34,7 +49,7 @@ export default function BlogPost() {
     "image": post.image,
     "author": {
       "@type": "Organization",
-      "name": "Equipe Playzi"
+      "name": post.author || "Equipe Playzi"
     },
     "publisher": {
       "@type": "Organization",
@@ -44,11 +59,13 @@ export default function BlogPost() {
         "url": "https://i.ibb.co/svpJKdbx/playsi-logo.png"
       }
     },
-    "datePublished": "2026-05-01", // This should ideally come from post.date in ISO format
+    "datePublished": parseDateToISO(post.date),
+    "dateModified": parseDateToISO(post.date),
     "mainEntityOfPage": {
       "@type": "WebPage",
       "@id": `https://playzi.app.br/blog/${post.slug}`
-    }
+    },
+    "wordCount": wordCount
   };
 
   return (
@@ -61,6 +78,11 @@ export default function BlogPost() {
         url={`https://playzi.app.br/blog/${post.slug}`}
         type="article"
         schema={articleSchema}
+        publishedTime={parseDateToISO(post.date)}
+        breadcrumbs={[
+          { name: 'Blog', url: '/blog' },
+          { name: post.title, url: `/blog/${post.slug}` }
+        ]}
       />
       
       <div className="max-w-3xl mx-auto">

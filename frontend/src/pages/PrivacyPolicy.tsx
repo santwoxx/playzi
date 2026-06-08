@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
 
   return (
     <div className="pt-20 pb-20 px-4 md:pt-24 min-h-screen bg-vibe-bg gaming-grid">
-      <SEO title="Política de Privacidade" description="Saiba como a Playzi protege seus dados e garante sua privacidade." />
+      <SEO title="Politica de Privacidade - Playzi" description="Saiba como a Playzi protege seus dados pessoais, garantindo seguranca e privacidade na maior rede social gamer do Brasil. Politica de privacidade completa e transparente." url="https://playzi.app.br/privacy" breadcrumbs={[{ name: 'Privacidade', url: '/privacy' }]} />
       
       <div className="max-w-2xl mx-auto">
         <button 

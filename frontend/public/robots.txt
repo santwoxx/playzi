@@ -1,4 +1,47 @@
 User-agent: *
 Allow: /
+Allow: /blog
+Allow: /blog/$	
+Allow: /encontros
+Allow: /jogar-agora
+Allow: /arcade
+Allow: /explore
+Allow: /communities
+Allow: /comunidades/
+Allow: /rankings
+Allow: /chat/global
+Allow: /diretrizes
+Allow: /privacy
+Allow: /terms
+Allow: /watch
+Allow: /reels
+Allow: /users
+
+Disallow: /chat/
+Disallow: /profile/
+Disallow: /notifications
+Disallow: /create
+Disallow: /onboarding
+Disallow: /api/
+
+Allow: /chat/global
 
 Sitemap: https://playzi.app.br/sitemap.xml
+
+# Crawl delay for polite crawling
+Crawl-Delay: 1
+
+User-agent: Googlebot
+Allow: /
+Crawl-Delay: 1
+
+User-agent: Googlebot-Image
+Allow: /
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Crawl-Delay: 2
+
+User-agent: Slurp
+Crawl-Delay: 5

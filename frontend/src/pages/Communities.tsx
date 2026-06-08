@@ -82,11 +82,14 @@ export default function Communities() {
   return (
     <div className="pt-20 pb-20 px-4 md:pt-24 min-h-screen bg-vibe-bg gaming-grid">
       <SEO 
-        title="Comunidades Gamer e Grupos de WhatsApp" 
-        description="Encontre e participe de comunidades exclusivas de Free Fire, Roblox, Minecraft e mais. Conecte-se com squads, encontre novos amigos para chat de vídeo e compartilhe experiências gamers." 
-        keywords="grupos de whatsapp free fire, comunidade roblox brasil, squad minecraft, clãs de jogos"
+        title="Comunidades Gamer - Grupos de Free Fire, Roblox e Minecraft" 
+        description="Encontre e participe de comunidades exclusivas de Free Fire, Roblox, Minecraft, GTA RP e mais. Conecte-se com squads, encontre novos amigos para jogar e compartilhe experiencias gamers no Brasil." 
+        keywords="comunidades gamer, grupos free fire, comunidades roblox, squad minecraft, cla de jogos, encontrar jogadores"
         url="https://playzi.app.br/communities"
         schema={communitiesSchema}
+        breadcrumbs={[
+          { name: 'Comunidades', url: '/communities' }
+        ]}
       />
       
       <div className="max-w-2xl mx-auto">

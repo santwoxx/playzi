@@ -1,11 +1,17 @@
 {
-  "name": "Playzi Gamer Social",
+  "name": "Playzi - Rede Social Gamer: Chat, Matchmaking e Encontros",
   "short_name": "Playzi",
-  "description": "A arena social definitiva para pro-players e entusiastas.",
+  "description": "A maior rede social gamer do Brasil. Chat de video 1v1, matchmaking para Free Fire e Roblox, encontros gamers e comunidades de jogos. Conecte-se com milhares de gamers ativos.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0E12",
+  "orientation": "portrait",
+  "background_color": "#06070a",
   "theme_color": "#00f2ff",
+  "categories": ["social", "games", "entertainment", "communication"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "https://i.ibb.co/svpJKdbx/playsi-logo.png",
@@ -16,7 +22,17 @@
     {
       "src": "https://i.ibb.co/svpJKdbx/playsi-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://i.ibb.co/svpJKdbx/playsi-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Playzi - Home Screen"
     }
   ]
 }
