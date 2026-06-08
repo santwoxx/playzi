@@ -1,0 +1,29 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "playzi-snowy.vercel.app"
+        }
+      ],
+      "destination": "https://playzi.app.br/$1",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://playzi-backend.onrender.com/api/:path*"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://playzi-backend.onrender.com/sitemap.xml"
+    },
+    {
+      "source": "/((?!api/|assets/|robots.txt|ads.txt|firebase-messaging-sw.js|manifest.json|favicon.ico|privacy.html).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

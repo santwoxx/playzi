@@ -1,0 +1,9 @@
+{
+  "name": "Playzi - Rede Social Gamer",
+  "description": "Playzi: A rede social gamer para chat, vídeo 1v1, comunidades de Free Fire e matchmaking grátis. Encontre seu duo e suba de nível na maior comunidade do Brasil.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

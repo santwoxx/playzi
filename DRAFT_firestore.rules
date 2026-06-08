@@ -1,0 +1,185 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================
+    // 🔐 HELPERS (The Fortress Core)
+    // ========================
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ========================
+    // 👤 VALIDATION HELPERS
+    // ========================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['nickname', 'onboarded']) &&
+             data.nickname is string && data.nickname.size() <= 50 &&
+             data.onboarded is bool &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+             (!('country' in data) || (data.country is string && data.country.size() <= 100));
+    }
+
+    function isValidPost(data) {
+      return data.keys().hasAll(['userId', 'caption', 'type', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.caption is string && data.caption.size() <= 5000 &&
+             data.type in ['text', 'image', 'video'] &&
+             data.createdAt == request.time;
+    }
+
+    function isValidCall(data) {
+      return data.keys().hasAll(['callerId', 'receiverId', 'participants', 'status', 'type', 'createdAt']) &&
+             data.callerId == request.auth.uid &&
+             data.participants is list && data.participants.size() == 2 &&
+             request.auth.uid in data.participants &&
+             data.status in ['calling', 'accepted', 'rejected', 'ended'] &&
+             data.type in ['voice', 'video'] &&
+             data.createdAt == request.time;
+    }
+
+    // ========================
+    // 📁 COLLECTIONS
+    // ========================
+
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // Social app, discovery is key
+      
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      
+      allow update: if isOwner(userId) && (
+        // Action: Update Profile
+        (incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'gender', 'photoURL', 'onboarded', 'mood', 'favoriteMusic', 'currentGame', 'statusMessage'])) ||
+        // Action: System Updates (XP/Level/etc) - In a real app these might be cloud functions
+        // For simplicity, we allow limited client updates but ideally these are server-side
+        (incoming().diff(existing()).affectedKeys().hasOnly(['xp', 'level', 'coins', 'rankTitle', 'followers', 'following', 'lastLoginAt']))
+      );
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if isSignedIn();
+        allow update: if isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Posts
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidPost(incoming());
+      allow update: if isSignedIn() && (
+        isOwner(existing().userId) || 
+        incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'commentCount'])
+      );
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && incoming().userId == request.auth.uid && 
+                       incoming().text is string && incoming().text.size() <= 1000;
+        allow delete: if isSignedIn() && isOwner(existing().userId);
+      }
+    }
+
+    // Chats
+    match /chats/{chatId} {
+      allow read: if isSignedIn() && (request.auth.uid in existing().participants);
+      allow create: if isSignedIn() && (request.auth.uid in incoming().participants) && incoming().participants.size() <= 10;
+      allow update: if isSignedIn() && (request.auth.uid in existing().participants) && 
+                     incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'updatedAt', 'mutedBy']);
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
+        allow create: if isSignedIn() && 
+                       (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants) &&
+                       incoming().senderId == request.auth.uid &&
+                       incoming().text is string && incoming().text.size() <= 2000;
+        allow delete: if isSignedIn() && isOwner(existing().senderId);
+      }
+    }
+
+    // Global Messages
+    match /globalMessages/{msgId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
+                     incoming().text is string && incoming().text.size() <= 1000;
+    }
+
+    // Matchmaking
+    match /matchmaking/{requestId} {
+      allow read, create, update, delete: if isSignedIn();
+    }
+
+    // Game Sessions
+    match /gameSessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && existing().hostId == request.auth.uid;
+    }
+
+    // Lives
+    match /lives/{liveId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        isOwner(existing().userId) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['viewerCount', 'status', 'lastHeartbeat'])
+      );
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
+                       incoming().text is string && incoming().text.size() <= 1000;
+        allow delete: if isSignedIn() && isOwner(existing().userId);
+      }
+    }
+
+    // Calls
+    match /calls/{callId} {
+      allow read: if isSignedIn() && (request.auth.uid in existing().participants);
+      allow create: if isSignedIn() && isValidCall(incoming()) && isValidId(callId);
+      allow update: if isSignedIn() && (request.auth.uid in existing().participants) &&
+                     (
+                       // Action: Answer
+                       (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'answer']) && existing().status == 'calling') ||
+                       // Action: Reject/End
+                       (incoming().diff(existing()).affectedKeys().hasOnly(['status']) && incoming().status in ['rejected', 'ended']) ||
+                       // Action: Set Offer (if not set at create)
+                       (incoming().diff(existing()).affectedKeys().hasOnly(['offer']) && !('offer' in existing()))
+                     );
+      allow delete: if isSignedIn() && (request.auth.uid in existing().participants);
+
+      match /candidates/{candidateId} {
+        allow read, write: if isSignedIn() && 
+                             (request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participants);
+      }
+    }
+  }
+}
