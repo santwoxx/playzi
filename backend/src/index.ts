@@ -13,30 +13,58 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
+// Lazy Firebase Admin Initialization Helper
+function ensureFirebaseInitialized() {
+  if (admin.apps.length > 0) return;
+
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error(
+      'Firebase Admin credentials are missing in environment variables. ' +
+      'Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.'
+    );
+  }
+
   try {
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY
-      ? (process.env.FIREBASE_PRIVATE_KEY.includes('-----BEGIN PRIVATE KEY-----')
-          ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-          : process.env.FIREBASE_PRIVATE_KEY)
-      : undefined;
+    const formattedPrivateKey = privateKey.includes('-----BEGIN PRIVATE KEY-----')
+      ? privateKey.replace(/\\n/g, '\n')
+      : privateKey;
 
     admin.initializeApp({
       credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: privateKey,
+        projectId,
+        clientEmail,
+        privateKey: formattedPrivateKey,
       }),
     });
-    console.log('Firebase Admin initialized successfully.');
+    console.log('Firebase Admin initialized successfully (lazy initialization).');
   } catch (error) {
     console.error('Firebase Admin initialization error:', error);
+    throw error;
   }
 }
 
-export const adminAuth = admin.auth();
-export const adminDb = admin.firestore();
+// Export proxied Firebase services so startup won't crash if environment variables are missing (e.g. initial Render build/deploy phase)
+export const adminAuth = new Proxy({} as admin.auth.Auth, {
+  get(target, prop, receiver) {
+    ensureFirebaseInitialized();
+    const service = admin.auth();
+    const value = Reflect.get(service, prop);
+    return typeof value === 'function' ? value.bind(service) : value;
+  }
+});
+
+export const adminDb = new Proxy({} as admin.firestore.Firestore, {
+  get(target, prop, receiver) {
+    ensureFirebaseInitialized();
+    const service = admin.firestore();
+    const value = Reflect.get(service, prop);
+    return typeof value === 'function' ? value.bind(service) : value;
+  }
+});
 
 // Auth helper
 async function verifyToken(req: express.Request, res: express.Response): Promise<string | null> {
