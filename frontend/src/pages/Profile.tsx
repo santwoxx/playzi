@@ -13,7 +13,7 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGamerStats } from '../hooks/useGamerStats';
 import { sendNotification } from '../services/notificationService';
-import { AVATARS_GALLERY } from '../constants/assets';
+import { AVATARS_GALLERY, MALE_AVATARS, FEMALE_AVATARS, NEUTRAL_AVATARS, AVATAR_STYLES_EXTENDED } from '../constants/assets';
 import CommentModal from '../components/CommentModal';
 import CallButton from '../components/CallButton';
 import ReportModal from '../components/ReportModal';
@@ -124,6 +124,7 @@ export default function Profile() {
   const [showReputationModal, setShowReputationModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [avatarGalleryTab, setAvatarGalleryTab] = useState<'all' | 'male' | 'female' | 'neutral'>('all');
   const [commentModal, setCommentModal] = useState<{
     isOpen: boolean;
     postId: string;
@@ -797,8 +798,37 @@ export default function Profile() {
 
                       <div className="space-y-4">
                         <label className="text-[10px] font-black text-vibe-muted uppercase tracking-widest mb-2 block ml-1">Mudar Avatar Principal</label>
+                        {/* Gender tabs */}
+                        <div className="flex space-x-1 p-0.5 bg-white/5 rounded-xl border border-white/5">
+                          {[
+                            { id: 'all', label: 'Todos' },
+                            { id: 'male', label: 'Masc', icon: '👨' },
+                            { id: 'female', label: 'Fem', icon: '👩' },
+                            { id: 'neutral', label: 'Neutro', icon: '🎮' },
+                          ].map(tab => (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => setAvatarGalleryTab(tab.id as any)}
+                              className={cn(
+                                "flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center space-x-1",
+                                avatarGalleryTab === tab.id
+                                  ? "bg-vibe-neon-blue text-vibe-bg shadow-glow-blue-sm"
+                                  : "text-slate-400 hover:text-white"
+                              )}
+                            >
+                              {'icon' in tab && <span>{tab.icon}</span>}
+                              <span>{tab.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                        {/* Avatar grid */}
                         <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto no-scrollbar p-1">
-                          {AVATARS_GALLERY.map((url, idx) => (
+                          {(avatarGalleryTab === 'all' ? AVATARS_GALLERY :
+                            avatarGalleryTab === 'male' ? MALE_AVATARS :
+                            avatarGalleryTab === 'female' ? FEMALE_AVATARS :
+                            NEUTRAL_AVATARS
+                          ).map((url, idx) => (
                             <button
                               key={idx}
                               type="button"

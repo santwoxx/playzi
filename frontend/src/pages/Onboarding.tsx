@@ -7,17 +7,12 @@ import { doc, updateDoc, increment } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { Gamepad2, User as UserIcon, ChevronRight, Check, Calendar, Heart, Gift, Users, Copy, Shield, MapPin, Search, Sparkles, Filter, Info, Camera } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { APP_LOGO } from '../constants/assets';
+import { APP_LOGO, AVATAR_STYLES_EXTENDED, AVATAR_PRESETS_BY_STYLE } from '../constants/assets';
 import { User } from '../types';
 
 const APP_URL = "https://playzi.app.br";
 
-const AVATAR_STYLES = [
-  { id: 'pixel-art', label: 'Retro' },
-  { id: 'bottts', label: 'Cyber' },
-  { id: 'adventurer', label: 'Gamer' },
-  { id: 'avataaars', label: 'Cartoon' }
-];
+const AVATAR_STYLES = AVATAR_STYLES_EXTENDED;
 
 const INTEREST_CATEGORIES = [
   { label: 'Gamer 🎮', items: ['Gaming', 'E-Sports', 'RPG', 'Hardware'] },
@@ -333,7 +328,7 @@ export default function Onboarding() {
                   initial={{ opacity: 0, scale: 0.9 }} 
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.1 }}
-                  className="space-y-6"
+                  className="space-y-5"
                 >
                   {/* Style selector tabs */}
                   <div className="grid grid-cols-4 gap-1.5 p-1 bg-white/5 rounded-2xl border border-white/5">
@@ -343,16 +338,45 @@ export default function Onboarding() {
                         type="button"
                         onClick={() => handleStyleChange(style.id)}
                         className={cn(
-                          "py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                          "py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center space-x-1",
                           avatarStyle === style.id 
                             ? "bg-vibe-neon-blue text-vibe-bg shadow-glow-blue font-bold" 
                             : "text-slate-400 hover:text-white"
                         )}
                       >
-                        {style.label}
+                        <span>{style.icon}</span>
+                        <span>{style.label}</span>
                       </button>
                     ))}
                   </div>
+
+                  {/* Preset avatar grid by style */}
+                  {AVATAR_PRESETS_BY_STYLE[avatarStyle] && (
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Escolha um preset</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {AVATAR_PRESETS_BY_STYLE[avatarStyle].slice(0, 8).map(seed => {
+                          const presetUrl = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${encodeURIComponent(seed)}`;
+                          const isSelected = avatarSeed === seed;
+                          return (
+                            <button
+                              key={seed}
+                              type="button"
+                              onClick={() => handleSeedChange(seed)}
+                              className={cn(
+                                "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                                isSelected
+                                  ? "border-vibe-neon-blue bg-vibe-neon-blue/10 scale-105 shadow-glow-blue-sm"
+                                  : "border-white/10 bg-white/5 hover:bg-white/10 grayscale hover:grayscale-0"
+                              )}
+                            >
+                              <img src={presetUrl} alt={seed} className="w-full h-full object-cover" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Seed Input & Shuffle Button */}
                   <div className="flex space-x-3 items-center">
@@ -374,7 +398,7 @@ export default function Onboarding() {
                   </div>
 
                   {/* Avatar Preview Display */}
-                  <div className="flex justify-center py-4">
+                  <div className="flex justify-center py-2">
                     <div className="w-40 h-40 rounded-[40px] overflow-hidden border-4 border-vibe-neon-blue/40 p-2 shadow-2xl relative bg-black/40">
                       <img 
                         src={formData.photoURL} 
@@ -384,7 +408,7 @@ export default function Onboarding() {
                     </div>
                   </div>
 
-                  <div className="pt-4 flex flex-col space-y-4">
+                  <div className="pt-2 flex flex-col space-y-4">
                     <button 
                       type="button" 
                       onClick={() => setStep(3)}
