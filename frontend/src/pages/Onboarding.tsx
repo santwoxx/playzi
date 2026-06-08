@@ -3,20 +3,44 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, updateDoc, getDoc, increment, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gamepad2, User as UserIcon, ChevronRight, Check, Calendar, Heart, Gift, Globe, Share2, Award, Users, Copy, Shield, MapPin, Search, Plus, Sparkles, Filter, Info, Briefcase, Camera } from 'lucide-react';
+import { Gamepad2, User as UserIcon, ChevronRight, Check, Calendar, Heart, Gift, Users, Copy, Shield, MapPin, Search, Sparkles, Filter, Info, Camera } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { APP_LOGO, AVATARS_GALLERY } from '../constants/assets';
+import { APP_LOGO } from '../constants/assets';
 import { User } from '../types';
 
 const APP_URL = "https://playzi.app.br";
 
-const GAMES = [
-  'Free Fire', 'Roblox', 'Minecraft', 'Fortnite', 
-  'Call of Duty', 'Valorant', 'League of Legends', 
-  'CS:GO', 'FIFA', 'Genshin Impact', 'Among Us', 'Rocket League', 
-  'Cyberpunk 2077', 'Spider-Man', 'Elden Ring', 'God of War'
+const AVATAR_STYLES = [
+  { id: 'pixel-art', label: 'Retro' },
+  { id: 'bottts', label: 'Cyber' },
+  { id: 'adventurer', label: 'Gamer' },
+  { id: 'avataaars', label: 'Cartoon' }
+];
+
+const INTEREST_CATEGORIES = [
+  { label: 'Gamer 🎮', items: ['Gaming', 'E-Sports', 'RPG', 'Hardware'] },
+  { label: 'Cultura 🍿', items: ['Música', 'Filmes', 'Arte', 'Cosplay'] },
+  { label: 'Lifestyle ☕', items: ['Esportes', 'Culinária', 'Tecnologia', 'Viagens'] }
+];
+
+const GAME_CATEGORIES = [
+  { label: 'FPS & MOBA 🔫', items: ['Free Fire', 'Valorant', 'CS:GO', 'League of Legends'] },
+  { label: 'Aventura & RPG 🛡️', items: ['Minecraft', 'Elden Ring', 'Genshin Impact', 'God of War'] },
+  { label: 'Ação & Esportes ⚽', items: ['Fortnite', 'Call of Duty', 'FIFA', 'Rocket League'] },
+  { label: 'Casual & Coop 🎈', items: ['Roblox', 'Among Us', 'Cyberpunk 2077', 'Spider-Man'] }
+];
+
+const CITIES_MOCK = [
+  'São Paulo, SP', 'Rio de Janeiro, RJ', 'Belo Horizonte, MG', 'Curitiba, PR', 
+  'Salvador, BA', 'Porto Alegre, RS', 'Brasília, DF', 'Fortaleza, CE',
+  'Manaus, AM', 'Recife, PE', 'Goiânia, GO', 'Belém, PA',
+  'Campinas, SP', 'São Luís, MA', 'Maceió, AL', 'Natal, RN',
+  'Teresina, PI', 'João Pessoa, PB', 'Aracaju, SE', 'Cuiabá, MT',
+  'Campo Grande, MS', 'Florianópolis, SC', 'Vitória, ES', 'Porto Velho, RO',
+  'Rio Branco, AC', 'Macapá, AP', 'Boa Vista, RR', 'Palmas, TO',
+  'Guarulhos, SP', 'São Bernardo do Campo, SP', 'Duque de Caxias, RJ', 'Nova Iguaçu, RJ'
 ];
 
 const LANGUAGES = [
@@ -26,16 +50,8 @@ const LANGUAGES = [
   { id: 'fr', label: 'Français', flag: '🇫🇷' }
 ];
 
-const INTERESTS = ['Música', 'Gaming', 'Filmes', 'Esportes', 'Culinária', 'Tecnologia', 'Arte', 'Viagens', 'Hardware', 'Cosplay', 'E-Sports', 'RPG'];
-
-const CITIES_MOCK = [
-  'São Paulo, SP', 'Rio de Janeiro, RJ', 'Belo Horizonte, MG', 'Curitiba, PR', 
-  'Salvador, BA', 'Porto Alegre, RS', 'Brasília, DF', 'Fortaleza, CE',
-  'Manaus, AM', 'Recife, PE', 'Goiânia, GO', 'Belém, PA'
-];
-
 export default function Onboarding() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const { currentUser, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -44,6 +60,9 @@ export default function Onboarding() {
   const [citySearch, setCitySearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [avatarStyle, setAvatarStyle] = useState('pixel-art');
+  const [avatarSeed, setAvatarSeed] = useState(currentUser?.uid || 'Gamer');
 
   const referralCode = React.useMemo(() => 
     Math.random().toString(36).substring(2, 10).toUpperCase(), []
@@ -64,7 +83,7 @@ export default function Onboarding() {
     interests: [] as string[],
     favoriteGames: [] as string[],
     bio: '',
-    photoURL: currentUser?.photoURL || AVATARS_GALLERY[0],
+    photoURL: currentUser?.photoURL || 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Gamer',
     onboarded: true,
     referralCode: referralCode,
     referralCount: 0,
@@ -99,25 +118,53 @@ export default function Onboarding() {
     }));
   };
 
+  const handleShuffleAvatar = () => {
+    const randomSeeds = ['Neo', 'Trinity', 'Morpheus', 'Zelda', 'Link', 'Mario', 'Luigi', 'GamerX', 'Playzi', 'CyberQuest', 'VibeCheck', 'ShadowWalk', 'Ghost', 'Ninja', 'Spectre', 'Rogue', 'Pikachu', 'Kratos', 'Goku', 'Steve'];
+    const randomSeed = randomSeeds[Math.floor(Math.random() * randomSeeds.length)] + '_' + Math.floor(Math.random() * 1000);
+    setAvatarSeed(randomSeed);
+    setFormData(prev => ({
+      ...prev,
+      photoURL: `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${encodeURIComponent(randomSeed)}`
+    }));
+  };
+
+  const handleStyleChange = (style: string) => {
+    setAvatarStyle(style);
+    setFormData(prev => ({
+      ...prev,
+      photoURL: `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(avatarSeed)}`
+    }));
+  };
+
+  const handleSeedChange = (seed: string) => {
+    setAvatarSeed(seed);
+    setFormData(prev => ({
+      ...prev,
+      photoURL: `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${encodeURIComponent(seed)}`
+    }));
+  };
+
+  const computedAge = React.useMemo(() => {
+    if (!formData.birthday) return null;
+    const birthDate = new Date(formData.birthday);
+    const today = new Date();
+    let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      calculatedAge--;
+    }
+    return calculatedAge;
+  }, [formData.birthday]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!currentUser || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      // Calculate age from birthday
-      let age = 0;
-      if (formData.birthday) {
-        const birthDate = new Date(formData.birthday);
-        const today = new Date();
-        age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-      }
+      let age = computedAge || 0;
 
-      // 1. Update Current User
+      // Update Current User in Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), {
         ...formData,
         age,
@@ -127,13 +174,10 @@ export default function Onboarding() {
         photoURL: formData.photoURL
       });
 
-      // 2. Handle Referral Credit (Logic for finding referrer)
+      // Handle Referral Credit
       if (formData.referredBy) {
-         // In a production app, we would call a cloud function here.
-         // For the demo, we store it in the user doc above (referredBy)
-         // And award a "Welcome Bonus" to the new user for using a referral
          await updateDoc(doc(db, 'users', currentUser.uid), {
-            coins: increment(500), // Welcome gift
+            coins: increment(500), 
             xp: increment(250)
          });
       }
@@ -191,7 +235,7 @@ export default function Onboarding() {
             <p className="text-slate-300 text-[10px] leading-relaxed max-w-[280px] mx-auto font-black uppercase tracking-[0.2em] opacity-80">
               {step === 0 ? "Escolha seu idioma para começar a jornada" : 
                step === 1 ? "Playzi é uma comunidade inclusiva e segura" :
-               step === 2 ? "Escolha um avatar que combina com você" :
+               step === 2 ? "Configure o seu visual de forma dinâmica" :
                step === 3 ? "Como podemos te chamar na arena?" : 
                step === 4 ? "Personalize sua experiência gamer" :
                "Convide seus squads e ganhe benefícios!"}
@@ -255,7 +299,7 @@ export default function Onboarding() {
                         { text: "Autêntico: Use fotos reais, nada de fakes.", icon: Camera, color: "text-vibe-neon-blue" },
                         { text: "Segurança: 18+ apenas.", icon: Shield, color: "text-green-500" },
                         { text: "Diversão: Foco em games e novas amizades.", icon: Gamepad2, color: "text-vibe-neon-purple" }
-                      ].map((rule, i) => (
+                      ].map((rule) => (
                         <div key={rule.text} className="flex items-center space-x-4 p-3 rounded-2xl hover:bg-white/5 transition-colors">
                            <div className={cn("p-2 rounded-xl bg-white/5", rule.color)}>
                               <rule.icon className="w-4 h-4" />
@@ -289,27 +333,55 @@ export default function Onboarding() {
                   initial={{ opacity: 0, scale: 0.9 }} 
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.1 }}
-                  className="space-y-8"
+                  className="space-y-6"
                 >
-                  <div className="grid grid-cols-4 gap-4 max-h-64 overflow-y-auto no-scrollbar p-2">
-                    {AVATARS_GALLERY.map((url, idx) => (
+                  {/* Style selector tabs */}
+                  <div className="grid grid-cols-4 gap-1.5 p-1 bg-white/5 rounded-2xl border border-white/5">
+                    {AVATAR_STYLES.map(style => (
                       <button
-                        key={idx}
+                        key={style.id}
                         type="button"
-                        onClick={() => setFormData({...formData, photoURL: url})}
+                        onClick={() => handleStyleChange(style.id)}
                         className={cn(
-                          "aspect-square rounded-[24px] overflow-hidden border-2 transition-all p-1 active:scale-90 group relative",
-                          formData.photoURL === url ? "border-vibe-neon-blue bg-vibe-neon-blue/20 scale-110 z-10 shadow-glow-blue" : "border-white/5 bg-white/5 grayscale opacity-40 hover:opacity-100 hover:grayscale-0"
+                          "py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                          avatarStyle === style.id 
+                            ? "bg-vibe-neon-blue text-vibe-bg shadow-glow-blue font-bold" 
+                            : "text-slate-400 hover:text-white"
                         )}
                       >
-                        <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover rounded-[18px]" />
-                        {formData.photoURL === url && (
-                          <div className="absolute top-1 right-1 bg-vibe-neon-blue rounded-full p-0.5 shadow-lg">
-                            <Check className="w-2 h-2 text-vibe-bg" />
-                          </div>
-                        )}
+                        {style.label}
                       </button>
                     ))}
+                  </div>
+
+                  {/* Seed Input & Shuffle Button */}
+                  <div className="flex space-x-3 items-center">
+                    <input
+                      type="text"
+                      value={avatarSeed}
+                      onChange={e => handleSeedChange(e.target.value)}
+                      placeholder="Nome do seu avatar..."
+                      className="flex-1 bg-white/10 border border-white/20 rounded-2xl py-3 px-5 text-white font-bold placeholder:text-white/30 focus:border-vibe-neon-blue/60 outline-none transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleShuffleAvatar}
+                      className="p-3 bg-vibe-gradient text-white rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer"
+                      title="Aleatório"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Avatar Preview Display */}
+                  <div className="flex justify-center py-4">
+                    <div className="w-40 h-40 rounded-[40px] overflow-hidden border-4 border-vibe-neon-blue/40 p-2 shadow-2xl relative bg-black/40">
+                      <img 
+                        src={formData.photoURL} 
+                        alt="Avatar Preview" 
+                        className="w-full h-full object-cover rounded-[30px]" 
+                      />
+                    </div>
                   </div>
 
                   <div className="pt-4 flex flex-col space-y-4">
@@ -365,7 +437,7 @@ export default function Onboarding() {
                        Sua Biografia
                     </label>
                     <textarea 
-                      className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-6 text-white font-semibold placeholder:text-white/30 focus:border-vibe-neon-blue/60 focus:bg-white/15 outline-none transition-all resize-none h-24 shadow-inner"
+                      className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-6 text-white font-semibold placeholder:text-white/30 focus:border-vibe-neon-blue/60 focus:bg-white/15 outline-none transition-all resize-none h-20 shadow-inner"
                       placeholder="Sou fã de RPG e FPS, procurando um squad para jogar..."
                       value={formData.bio}
                       onChange={e => setFormData({...formData, bio: e.target.value})}
@@ -383,12 +455,20 @@ export default function Onboarding() {
                         <input 
                           type="date"
                           style={{ colorScheme: 'dark' }}
-                          className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-6 pr-10 text-white font-bold focus:border-vibe-neon-blue/60 focus:bg-white/15 outline-none transition-all"
+                          className={cn(
+                            "w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-6 pr-10 text-white font-bold focus:border-vibe-neon-blue/60 focus:bg-white/15 outline-none transition-all",
+                            computedAge !== null && computedAge < 18 ? "border-red-500/50 focus:border-red-500" : ""
+                          )}
                           value={formData.birthday}
                           onChange={e => setFormData({...formData, birthday: e.target.value})}
                         />
                         <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                       </div>
+                      {computedAge !== null && computedAge < 18 && (
+                        <p className="text-red-500 font-bold text-[8px] uppercase mt-1 animate-pulse">
+                          ⚠️ Arena apenas para maiores de 18 anos!
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -442,7 +522,7 @@ export default function Onboarding() {
                     </div>
 
                     {showSuggestions && citySearch.length > 1 && (
-                      <div className="absolute top-full left-0 w-full mt-2 bg-[#12082b] border border-white/10 rounded-2xl overflow-hidden z-20 shadow-2xl animate-in fade-in slide-in-from-top-2">
+                      <div className="absolute top-full left-0 w-full mt-2 bg-[#12082b] border border-white/10 rounded-2xl overflow-hidden z-20 shadow-2xl max-h-40 overflow-y-auto">
                         {CITIES_MOCK.filter(c => c.toLowerCase().includes(citySearch.toLowerCase())).map(city => (
                           <button
                             key={city}
@@ -541,7 +621,7 @@ export default function Onboarding() {
                   <div className="pt-6 flex flex-col space-y-3">
                     <button 
                       type="button" 
-                      disabled={!formData.nickname || !formData.gender || !formData.birthday}
+                      disabled={!formData.nickname || !formData.gender || !formData.birthday || (computedAge !== null && computedAge < 18)}
                       onClick={() => setStep(4)}
                       className="w-full py-5 bg-vibe-gradient text-white font-black rounded-2xl transition-all active:scale-[0.98] shadow-xl shadow-vibe-neon-blue/20 uppercase tracking-widest text-[10px] disabled:opacity-30 disabled:cursor-not-allowed group flex items-center justify-center space-x-2"
                     >
@@ -563,72 +643,90 @@ export default function Onboarding() {
                   initial={{ opacity: 0, x: 20 }} 
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  className="space-y-6 h-[480px] overflow-y-auto no-scrollbar pr-2"
                 >
+                  {/* Categorized Interests */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                       <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Seus Interesses</label>
                       <span className="text-[9px] font-black text-vibe-neon-blue uppercase px-2.5 py-1 bg-vibe-neon-blue/15 rounded-full">{formData.interests.length} Selecionados</span>
                     </div>
-                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar pb-2">
-                      {INTERESTS.map(item => {
-                        const active = formData.interests.includes(item);
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => handleToggleInterest(item, 'interests')}
-                            className={cn(
-                              "px-4 py-2.5 rounded-full text-[10px] font-black transition-all border uppercase tracking-widest",
-                              active
-                                ? "bg-vibe-neon-blue border-vibe-neon-blue text-vibe-bg shadow-glow-blue scale-105"
-                                : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                            )}
-                          >
-                            {item}
-                          </button>
-                        );
-                      })}
+
+                    <div className="space-y-4">
+                      {INTEREST_CATEGORIES.map(category => (
+                        <div key={category.label} className="space-y-1.5">
+                          <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400 ml-1">{category.label}</h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {category.items.map(item => {
+                              const active = formData.interests.includes(item);
+                              return (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  onClick={() => handleToggleInterest(item, 'interests')}
+                                  className={cn(
+                                    "px-4 py-2.5 rounded-full text-[10px] font-black transition-all border uppercase tracking-widest",
+                                    active
+                                      ? "bg-vibe-neon-blue border-vibe-neon-blue text-vibe-bg shadow-glow-blue scale-105"
+                                      : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                                  )}
+                                >
+                                  {item}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  {/* Categorized Games */}
+                  <div className="space-y-4 pt-4 border-t border-white/5">
                     <div className="flex items-center justify-between px-1">
                       <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Jogos Favoritos</label>
                       <span className="text-[9px] font-black text-vibe-neon-purple uppercase px-2.5 py-1 bg-vibe-neon-purple/15 rounded-full">{formData.favoriteGames.length} Selecionados</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto no-scrollbar pr-1">
-                      {GAMES.map(game => {
-                        const active = formData.favoriteGames.includes(game);
-                        return (
-                          <button
-                            key={game}
-                            type="button"
-                            onClick={() => handleToggleInterest(game, 'favoriteGames')}
-                            className={cn(
-                              "p-4 rounded-[24px] text-[10px] font-black transition-all border uppercase tracking-tighter text-left flex items-center justify-between group",
-                              active
-                                ? "bg-vibe-neon-purple/20 border-vibe-neon-purple text-vibe-neon-purple shadow-glow-purple-sm"
-                                : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                            )}
-                          >
-                            <span>{game}</span>
-                            <div className={cn(
-                               "w-4 h-4 rounded-full border flex items-center justify-center transition-all",
-                               active ? "bg-vibe-neon-purple border-vibe-neon-purple" : "bg-transparent border-white/20 group-hover:border-white/40"
-                            )}>
-                               {active && <Check className="w-2.5 h-2.5 text-white" />}
-                            </div>
-                          </button>
-                        );
-                      })}
+
+                    <div className="space-y-4">
+                      {GAME_CATEGORIES.map(category => (
+                        <div key={category.label} className="space-y-1.5">
+                          <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400 ml-1">{category.label}</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {category.items.map(game => {
+                              const active = formData.favoriteGames.includes(game);
+                              return (
+                                <button
+                                  key={game}
+                                  type="button"
+                                  onClick={() => handleToggleInterest(game, 'favoriteGames')}
+                                  className={cn(
+                                    "p-3 rounded-2xl text-[10px] font-black transition-all border uppercase tracking-tighter text-left flex items-center justify-between group",
+                                    active
+                                      ? "bg-vibe-neon-purple/25 border-vibe-neon-purple text-vibe-neon-purple shadow-glow-purple-sm"
+                                      : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                                  )}
+                                >
+                                  <span>{game}</span>
+                                  <div className={cn(
+                                     "w-4 h-4 rounded-full border flex items-center justify-center transition-all",
+                                     active ? "bg-vibe-neon-purple border-vibe-neon-purple" : "bg-transparent border-white/20 group-hover:border-white/40"
+                                  )}>
+                                     {active && <Check className="w-2.5 h-2.5 text-white" />}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
                   <div className="pt-4 space-y-4">
                     <button 
                       type="button"
-                      disabled={formData.interests.length < 2}
+                      disabled={formData.interests.length < 2 || formData.favoriteGames.length < 1}
                       onClick={() => setStep(5)}
                       className="w-full py-5 bg-vibe-gradient text-white font-black rounded-2xl shadow-xl shadow-vibe-neon-blue/20 flex items-center justify-center space-x-2 transition-all active:scale-[0.98] uppercase tracking-widest text-[11px] group"
                     >

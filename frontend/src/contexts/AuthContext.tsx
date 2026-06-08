@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, deleteUser } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, deleteUser, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth, db, rtdb } from '../lib/firebase';
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { ref, onValue, set, onDisconnect, serverTimestamp as rtdbTimestamp, remove } from 'firebase/database';
@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string) => Promise<void>;
   loginAnonymous: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -149,12 +150,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInAnonymously(auth);
   };
 
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, register, loginAnonymous, logout, refreshUser, deleteAccount }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, register, loginAnonymous, loginWithGoogle, logout, refreshUser, deleteAccount }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -8,7 +8,7 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const extendedConfig = {
   ...firebaseConfig,
-  databaseURL: "https://playzi-a72db-default-rtdb.firebaseio.com"
+  databaseURL: "https://playzi-app-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(extendedConfig);
