@@ -1,4 +1,4 @@
-const DICEBEAR_BASE = 'https://api.dicebear.com/7.x';
+const DICEBEAR_BASE = 'https://api.dicebear.com/9.x';
 
 const MALE_SEEDS = [
   'Thor', 'Kratos', 'Max', 'Leo', 'Hunter', 'Blade',

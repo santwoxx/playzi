@@ -9,6 +9,7 @@ import { Gamepad2, User as UserIcon, ChevronRight, Check, Calendar, Heart, Gift,
 import { cn } from '../lib/utils';
 import { APP_LOGO, AVATAR_STYLES_EXTENDED, AVATAR_PRESETS_BY_STYLE } from '../constants/assets';
 import { User } from '../types';
+import Avatar from '../components/Avatar';
 
 const APP_URL = "https://playzi.app.br";
 
@@ -78,7 +79,7 @@ export default function Onboarding() {
     interests: [] as string[],
     favoriteGames: [] as string[],
     bio: '',
-    photoURL: currentUser?.photoURL || 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Gamer',
+    photoURL: currentUser?.photoURL || 'https://api.dicebear.com/9.x/pixel-art/svg?seed=Gamer',
     onboarded: true,
     referralCode: referralCode,
     referralCount: 0,
@@ -119,7 +120,7 @@ export default function Onboarding() {
     setAvatarSeed(randomSeed);
     setFormData(prev => ({
       ...prev,
-      photoURL: `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${encodeURIComponent(randomSeed)}`
+      photoURL: `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${encodeURIComponent(randomSeed)}`
     }));
   };
 
@@ -127,7 +128,7 @@ export default function Onboarding() {
     setAvatarStyle(style);
     setFormData(prev => ({
       ...prev,
-      photoURL: `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(avatarSeed)}`
+      photoURL: `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(avatarSeed)}`
     }));
   };
 
@@ -135,7 +136,7 @@ export default function Onboarding() {
     setAvatarSeed(seed);
     setFormData(prev => ({
       ...prev,
-      photoURL: `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${encodeURIComponent(seed)}`
+      photoURL: `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${encodeURIComponent(seed)}`
     }));
   };
 
@@ -356,7 +357,7 @@ export default function Onboarding() {
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Escolha um preset</label>
                       <div className="grid grid-cols-4 gap-2">
                         {AVATAR_PRESETS_BY_STYLE[avatarStyle].slice(0, 8).map(seed => {
-                          const presetUrl = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${encodeURIComponent(seed)}`;
+                          const presetUrl = `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${encodeURIComponent(seed)}`;
                           const isSelected = avatarSeed === seed;
                           return (
                             <button
@@ -364,13 +365,13 @@ export default function Onboarding() {
                               type="button"
                               onClick={() => handleSeedChange(seed)}
                               className={cn(
-                                "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                                "aspect-square rounded-xl overflow-hidden border-2 transition-all flex items-center justify-center bg-black/40",
                                 isSelected
                                   ? "border-vibe-neon-blue bg-vibe-neon-blue/10 scale-105 shadow-glow-blue-sm"
                                   : "border-white/10 bg-white/5 hover:bg-white/10 grayscale hover:grayscale-0"
                               )}
                             >
-                              <img src={presetUrl} alt={seed} className="w-full h-full object-cover" />
+                              <Avatar src={presetUrl} alt={seed} className="w-full h-full rounded-lg" fallbackText={seed} />
                             </button>
                           );
                         })}
@@ -399,11 +400,12 @@ export default function Onboarding() {
 
                   {/* Avatar Preview Display */}
                   <div className="flex justify-center py-2">
-                    <div className="w-40 h-40 rounded-[40px] overflow-hidden border-4 border-vibe-neon-blue/40 p-2 shadow-2xl relative bg-black/40">
-                      <img 
+                    <div className="w-40 h-40 rounded-[40px] overflow-hidden border-4 border-vibe-neon-blue/40 p-2 shadow-2xl relative bg-black/40 flex items-center justify-center">
+                      <Avatar 
                         src={formData.photoURL} 
                         alt="Avatar Preview" 
-                        className="w-full h-full object-cover rounded-[30px]" 
+                        className="w-full h-full rounded-[30px]" 
+                        fallbackText={formData.nickname || 'Gamer'}
                       />
                     </div>
                   </div>

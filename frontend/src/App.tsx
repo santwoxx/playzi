@@ -7,6 +7,7 @@ import NotificationBar from './components/NotificationBar';
 const QuickInbox = lazy(() => import('./components/QuickInbox'));
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Home, Search, PlayCircle, Gamepad2, User, Heart, MessageSquare, Users as UsersIcon } from 'lucide-react';
+import Avatar from './components/Avatar';
 import { CallProvider } from './contexts/CallContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -175,7 +176,12 @@ const DesktopSidebar = memo(({ onInboxOpen }: { onInboxOpen: () => void }) => {
           to="/profile"
           className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-left block"
         >
-          <img src={currentUser?.photoURL || `https://ui-avatars.com/api/?name=${currentUser?.username}`} className="w-10 h-10 rounded-full border-2 border-white/10" alt="Me" />
+          <Avatar 
+            src={currentUser?.photoURL} 
+            fallbackText={currentUser?.nickname || currentUser?.displayName || 'Me'} 
+            className="w-10 h-10 border-2 border-white/10 rounded-full" 
+            size="sm" 
+          />
           <div className="flex-1 overflow-hidden">
             <p className="text-white font-bold text-xs truncate uppercase tracking-tighter">{currentUser?.nickname || currentUser?.displayName}</p>
             <p className="text-vibe-muted text-[10px] font-black uppercase tracking-widest">Ver Perfil</p>
@@ -243,14 +249,14 @@ function AuthenticatedApp() {
       <AnnouncementTicker />
       <NotificationManager />
       {showNavs && <DesktopSidebar onInboxOpen={() => setIsInboxOpen(true)} />}
-      <div className="flex flex-col items-center">
+      <div className={cn("flex flex-col items-center w-full min-h-screen", showNavs && "lg:pl-64")}>
         {showNavs && <div className="lg:hidden w-full"><Navbar onInboxOpen={() => setIsInboxOpen(true)} /></div>}
         <NotificationBar />
         <QuickInbox isOpen={isInboxOpen} onClose={() => setIsInboxOpen(false)} />
         <FloatingGrowthWidgets />
         <main className={cn(
           "w-full relative", 
-          location.pathname.startsWith('/watch') ? "max-w-none lg:pl-64" : "max-w-2xl",
+          location.pathname.startsWith('/watch') ? "max-w-none" : "max-w-2xl",
           showNavs ? "pt-[calc(4rem+env(safe-area-inset-top,12px))] pb-[calc(64px+env(safe-area-inset-bottom,16px))] lg:pt-0 lg:pb-0" : "pt-0 pb-0"
         )}>
           <ErrorBoundary>

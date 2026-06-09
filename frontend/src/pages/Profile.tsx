@@ -19,6 +19,7 @@ import CallButton from '../components/CallButton';
 import ReportModal from '../components/ReportModal';
 import ReputationModal from '../components/ReputationModal';
 import { Star as StarIcon } from 'lucide-react';
+import Avatar from '../components/Avatar';
 
 
 function getCountryEmoji(country: string) {
@@ -363,14 +364,13 @@ export default function Profile() {
         <div className="flex items-center mb-6">
           {/* Avatar */}
           <div className="relative mr-8 md:mr-12">
-            <div className="w-[86px] h-[86px] md:w-[110px] md:h-[110px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]">
-              <div className="w-full h-full rounded-full border-2 border-black overflow-hidden relative">
-                <img 
-                  src={profileUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.nickname || profileUser.displayName || 'User')}&background=06070a&color=fff`} 
-                  className="w-full h-full object-cover" 
-                  referrerPolicy="no-referrer"
-                />
-              </div>
+            <div className="w-[86px] h-[86px] md:w-[110px] md:h-[110px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center shrink-0">
+              <Avatar
+                src={profileUser.photoURL}
+                fallbackText={profileUser.nickname || profileUser.displayName || 'User'}
+                className="w-full h-full border-2 border-black rounded-full"
+                size="lg"
+              />
             </div>
           </div>
 
@@ -823,7 +823,7 @@ export default function Profile() {
                           ))}
                         </div>
                         {/* Avatar grid */}
-                        <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto no-scrollbar p-1">
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto no-scrollbar p-1">
                           {(avatarGalleryTab === 'all' ? AVATARS_GALLERY :
                             avatarGalleryTab === 'male' ? MALE_AVATARS :
                             avatarGalleryTab === 'female' ? FEMALE_AVATARS :
@@ -834,11 +834,11 @@ export default function Profile() {
                               type="button"
                               onClick={() => setEditFormData({...editFormData, photoURL: url})}
                               className={cn(
-                                "aspect-square rounded-xl overflow-hidden border-2 transition-all p-0.5",
+                                "aspect-square rounded-xl overflow-hidden border-2 transition-all p-0.5 flex items-center justify-center bg-black/40",
                                 editFormData.photoURL === url ? "border-vibe-neon-blue bg-vibe-neon-blue/10 scale-105" : "border-transparent bg-white/5 grayscale opacity-50"
                               )}
                             >
-                              <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover rounded-lg" />
+                              <Avatar src={url} alt={`Avatar ${idx}`} className="w-full h-full rounded-lg" fallbackText="P" />
                             </button>
                           ))}
                         </div>
