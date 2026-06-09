@@ -41,7 +41,7 @@ const SEO: React.FC<SEOProps> = ({
   alternateLocales,
 }) => {
   const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : SITE_URL);
-  const defaultKeywords = 'playzi, playsi, chat de video gamer, chat de video 1v1, grupos de jogos, encontrar amigos, jogar com amigos, comunidade gamer, matchmaking, squad free fire, roblox amigos, tinder gamer, app de relacionamento, bate papo amizade encontro, video chamada gratis, amizades online brasil';
+  const defaultKeywords = 'playzi, playsi, chat de video gamer, chat de video 1v1, grupos de jogos, encontrar amigos, jogar com amigos, comunidade gamer, matchmaking, squad free fire, roblox amigos, tinder gamer, app de relacionamento, bate papo amizade encontro, video chamada gratis, amizades online brasil, aplicativo para conversar, conversar com pessoas, ometv, ome tv, conversar com ia, ia para conversar, chamada de video online, chat video chamada, videochamada, ometv alternativo';
   const fullTitle = title ? `${title} | Playzi` : 'Playzi - Chat de Video Gamer, Matchmaking e Squad Gratis';
   const fullDescription = description || 'Conheca pessoas novas na Playzi! O melhor app de socializacao gamer com chat de video 1v1, matchmaking e comunidades ativas. Encontre seu squad agora no Brasil.';
   const fullKeywords = keywords ? `${keywords}, ${defaultKeywords}` : defaultKeywords;
