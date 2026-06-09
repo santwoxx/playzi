@@ -43,6 +43,7 @@ const BrowserSync = lazy(() => import('./pages/BrowserSync'));
 const YoutubeHub = lazy(() => import('./pages/YoutubeHub'));
 
 import InstallPrompt from './components/InstallPrompt';
+import SEOFooter from './components/SEOFooter';
 import NotificationManager from './components/NotificationManager';
 import AnnouncementTicker from './components/AnnouncementTicker';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -202,6 +203,62 @@ function AuthenticatedApp() {
   if (loading) return <PageLoader />;
 
   if (!currentUser) {
+    const publicRoutes = [
+      '/blog',
+      '/privacy',
+      '/terms',
+      '/diretrizes',
+      '/communities',
+      '/arcade'
+    ];
+
+    const isPublicRoute = 
+      publicRoutes.includes(location.pathname) || 
+      location.pathname.startsWith('/blog/') || 
+      location.pathname.startsWith('/comunidades/');
+
+    if (isPublicRoute) {
+      return (
+        <div className="bg-vibe-bg font-sans selection:bg-vibe-neon-blue selection:text-vibe-bg min-h-screen flex flex-col w-full">
+          <InstallPrompt />
+          
+          {/* Public Header */}
+          <header className="w-full bg-black/60 backdrop-blur-md border-b border-white/5 py-4 px-6 fixed top-0 z-50 flex items-center justify-between">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <img src="https://i.ibb.co/svpJKdbx/playsi-logo.png" className="w-8 h-8 group-hover:scale-105 transition-transform" alt="Playzi" />
+              <h1 className="text-2xl font-black tracking-tighter text-white">Playzi</h1>
+            </Link>
+            <Link 
+              to="/" 
+              className="px-4 py-2 bg-vibe-gradient text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform shadow-glow-blue-sm"
+            >
+              Entrar / Cadastrar
+            </Link>
+          </header>
+          
+          <main className="flex-1 w-full pt-16">
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogPost />} />
+                  <Route path="/communities" element={<Communities />} />
+                  <Route path="/comunidades/:slug" element={<CommunityLanding />} />
+                  <Route path="/arcade" element={<Arcade />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/diretrizes" element={<Guidelines />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </main>
+          
+          <SEOFooter />
+        </div>
+      );
+    }
+
     return (
       <Suspense fallback={<PageLoader />}>
         <InstallPrompt />
