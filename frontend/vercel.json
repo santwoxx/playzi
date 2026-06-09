@@ -18,11 +18,7 @@
       "destination": "https://playzi-backend.onrender.com/api/:path*"
     },
     {
-      "source": "/sitemap.xml",
-      "destination": "https://playzi-backend.onrender.com/sitemap.xml"
-    },
-    {
-      "source": "/((?!api/|assets/|robots.txt|ads.txt|firebase-messaging-sw.js|manifest.json|favicon.ico|privacy.html).*)",
+      "source": "/((?!api/|assets/|robots.txt|ads.txt|sitemap.xml|firebase-messaging-sw.js|manifest.json|favicon.ico|privacy.html).*)",
       "destination": "/index.html"
     }
   ]
