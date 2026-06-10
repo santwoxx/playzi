@@ -40,27 +40,29 @@ export default function Avatar({ src, alt = 'Avatar', className, fallbackText = 
 
   const hasStatus = !!status;
 
-  const renderFallback = () => (
-    <div
-      onClick={onClick}
-      className={cn(
-        "aspect-square rounded-full flex items-center justify-center font-black bg-gradient-to-br from-vibe-neon-blue/20 via-vibe-neon-purple/10 to-vibe-neon-pink/20 border border-vibe-neon-blue/30 text-vibe-neon-blue uppercase select-none shadow-inner shrink-0",
-        sizeClasses[size],
-        onClick && "cursor-pointer active:scale-95 transition-transform",
-        className
-      )}
-    >
-      <span className="tracking-tighter leading-none">{initials}</span>
-    </div>
+  const isCustomSize = className && (className.includes('w-') || className.includes('h-'));
+
+  const outerClasses = cn(
+    "relative inline-block shrink-0 leading-none",
+    !isCustomSize && sizeClasses[size],
+    className
   );
 
   if (!src || hasError) {
     return (
-      <div className="relative inline-block shrink-0 leading-none">
-        {renderFallback()}
+      <div className={outerClasses}>
+        <div
+          onClick={onClick}
+          className={cn(
+            "w-full h-full aspect-square rounded-full flex items-center justify-center font-black bg-gradient-to-br from-vibe-neon-blue/20 via-vibe-neon-purple/10 to-vibe-neon-pink/20 border border-vibe-neon-blue/30 text-vibe-neon-blue uppercase select-none shadow-inner",
+            onClick && "cursor-pointer active:scale-95 transition-transform"
+          )}
+        >
+          <span className="tracking-tighter leading-none">{initials}</span>
+        </div>
         {hasStatus && (
           <span className={cn("absolute bottom-0 right-0 rounded-full border-2 border-vibe-bg", 
-            size === 'xs' || size === 'sm' ? 'w-2 h-2 border-[1px]' : size === 'md' ? 'w-3 h-3' : 'w-4 h-4',
+            size === 'xs' || size === 'sm' ? 'w-2.5 h-2.5 border-[1px]' : size === 'md' ? 'w-3.5 h-3.5' : 'w-4 h-4',
             statusColors[status]
           )} />
         )}
@@ -69,14 +71,12 @@ export default function Avatar({ src, alt = 'Avatar', className, fallbackText = 
   }
 
   return (
-    <div className="relative inline-block shrink-0 leading-none">
+    <div className={outerClasses}>
       <div
         onClick={onClick}
         className={cn(
-          "aspect-square rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center shrink-0",
-          onClick && "cursor-pointer active:scale-95 transition-transform",
-          sizeClasses[size],
-          className
+          "w-full h-full aspect-square rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center",
+          onClick && "cursor-pointer active:scale-95 transition-transform"
         )}
       >
         <img
