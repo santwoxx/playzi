@@ -2,12 +2,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "AIzaSyAPkOwTvRCPi6elNWVqG5s2_3W-7O2omJk",
-  authDomain: "playzi-a72db.firebaseapp.com",
-  projectId: "playzi-a72db",
-  storageBucket: "playzi-a72db.firebasestorage.app",
-  messagingSenderId: "671700694069",
-  appId: "1:671700694069:web:87f40e44390803c4bc6d7c"
+  apiKey: "AIzaSyBmloRHE9zjlU9zhrXsKo435g-WOhllWvQ",
+  authDomain: "playzi-app.firebaseapp.com",
+  projectId: "playzi-app",
+  storageBucket: "playzi-app.firebasestorage.app",
+  messagingSenderId: "1077910632366",
+  appId: "1:1077910632366:web:951e5aabcf93e4d0b5fa3f"
 });
 
 const messaging = firebase.messaging();
