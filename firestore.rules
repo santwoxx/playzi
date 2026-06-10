@@ -85,9 +85,9 @@ service cloud.firestore {
         incoming().uid == existing().uid &&
         (
           // Action: Update Profile
-          (incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'gender', 'photoURL', 'photos', 'location', 'interestedIn', 'onboarded', 'mood', 'favoriteMusic', 'currentGame', 'statusMessage', 'playStyle', 'rewards', 'privacySettings', 'friends', 'followers', 'following', 'blocks', 'contactedUids', 'chatSlots', 'currentIntent', 'frequency', 'behavior'])) ||
+          (incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'gender', 'photoURL', 'photos', 'location', 'interestedIn', 'onboarded', 'mood', 'favoriteMusic', 'currentGame', 'statusMessage', 'playStyle', 'rewards', 'privacySettings', 'friends', 'followers', 'following', 'blocks', 'contactedUids', 'chatSlots', 'currentIntent', 'frequency', 'behavior', 'age', 'displayName', 'language', 'referralCode', 'referredBy', 'referralCount', 'links', 'status', 'fcmToken', 'fcmTokens', 'updatedAt'])) ||
           // Action: System Updates (XP/Level/etc)
-          (incoming().diff(existing()).affectedKeys().hasOnly(['xp', 'level', 'coins', 'rankTitle', 'lastLoginAt', 'streak', 'victories', 'tickets', 'lastRewardDate', 'medals', 'achievements', 'reputation']))
+          (incoming().diff(existing()).affectedKeys().hasOnly(['xp', 'level', 'coins', 'gems', 'rankTitle', 'lastLoginAt', 'streak', 'victories', 'tickets', 'lastRewardDate', 'medals', 'achievements', 'reputation', 'status', 'fcmToken', 'fcmTokens', 'updatedAt']))
         )
       );
 
@@ -186,7 +186,11 @@ service cloud.firestore {
 
     // Calls
     match /calls/{callId} {
-      allow read: if isSignedIn() && (request.auth.uid in existing().participants);
+      allow read: if isSignedIn() && (
+        request.auth.uid in existing().participants ||
+        existing().receiverId == request.auth.uid ||
+        existing().callerId == request.auth.uid
+      );
       allow create: if isSignedIn() && isValidCall(incoming()) && isValidId(callId);
       allow update: if isSignedIn() && (request.auth.uid in existing().participants) &&
                      existing().status == 'calling' && (
