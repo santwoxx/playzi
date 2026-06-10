@@ -87,7 +87,6 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(incoming());
       
       allow update: if isOwner(userId) && (
-        incoming().uid == existing().uid &&
         incoming().diff(existing()).affectedKeys().hasOnly([
           'nickname', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'gender', 'photoURL', 'photos', 'location', 'interestedIn', 'onboarded', 'mood', 'favoriteMusic', 'currentGame', 'statusMessage', 'playStyle', 'rewards', 'privacySettings', 'friends', 'followers', 'following', 'blocks', 'contactedUids', 'chatSlots', 'currentIntent', 'frequency', 'behavior', 'age', 'displayName', 'language', 'referralCode', 'referredBy', 'referralCount', 'links', 'status', 'fcmToken', 'fcmTokens', 'updatedAt',
           'xp', 'level', 'coins', 'gems', 'rankTitle', 'lastLoginAt', 'streak', 'victories', 'tickets', 'lastRewardDate', 'medals', 'achievements', 'reputation', 'relationshipStatus', 'email', 'username', 'region', 'privacyAgeHidden', 'badges', 'profileFrame', 'profileTheme', 'swipesCount', 'referralRewardsClaimed'
