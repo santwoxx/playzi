@@ -88,12 +88,10 @@ service cloud.firestore {
       
       allow update: if isOwner(userId) && (
         incoming().uid == existing().uid &&
-        (
-          // Action: Update Profile
-          (incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'gender', 'photoURL', 'photos', 'location', 'interestedIn', 'onboarded', 'mood', 'favoriteMusic', 'currentGame', 'statusMessage', 'playStyle', 'rewards', 'privacySettings', 'friends', 'followers', 'following', 'blocks', 'contactedUids', 'chatSlots', 'currentIntent', 'frequency', 'behavior', 'age', 'displayName', 'language', 'referralCode', 'referredBy', 'referralCount', 'links', 'status', 'fcmToken', 'fcmTokens', 'updatedAt'])) ||
-          // Action: System Updates (XP/Level/etc)
-          (incoming().diff(existing()).affectedKeys().hasOnly(['xp', 'level', 'coins', 'gems', 'rankTitle', 'lastLoginAt', 'streak', 'victories', 'tickets', 'lastRewardDate', 'medals', 'achievements', 'reputation', 'status', 'fcmToken', 'fcmTokens', 'updatedAt']))
-        )
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'nickname', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'gender', 'photoURL', 'photos', 'location', 'interestedIn', 'onboarded', 'mood', 'favoriteMusic', 'currentGame', 'statusMessage', 'playStyle', 'rewards', 'privacySettings', 'friends', 'followers', 'following', 'blocks', 'contactedUids', 'chatSlots', 'currentIntent', 'frequency', 'behavior', 'age', 'displayName', 'language', 'referralCode', 'referredBy', 'referralCount', 'links', 'status', 'fcmToken', 'fcmTokens', 'updatedAt',
+          'xp', 'level', 'coins', 'gems', 'rankTitle', 'lastLoginAt', 'streak', 'victories', 'tickets', 'lastRewardDate', 'medals', 'achievements', 'reputation', 'relationshipStatus', 'email', 'username', 'region', 'privacyAgeHidden', 'badges', 'profileFrame', 'profileTheme', 'swipesCount', 'referralRewardsClaimed'
+        ])
       );
 
       allow delete: if isOwner(userId);
@@ -200,13 +198,21 @@ service cloud.firestore {
       );
       allow create: if isSignedIn() && isValidCall(incoming()) && isValidId(callId);
       allow update: if isSignedIn() && (request.auth.uid in existing().participants) &&
-                     existing().status == 'calling' && (
-                       // Action: Answer
-                       (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'answer']) && existing().status == 'calling') ||
-                       // Action: Reject/End
-                       (incoming().diff(existing()).affectedKeys().hasOnly(['status']) && incoming().status in ['rejected', 'ended']) ||
-                       // Action: Set Offer
-                       (incoming().diff(existing()).affectedKeys().hasOnly(['offer']) && !('offer' in existing()))
+                     (
+                       // Action during 'calling' phase
+                       (existing().status == 'calling' && (
+                         // Action: Answer
+                         (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'answer']) && incoming().status == 'accepted') ||
+                         // Action: Reject/End
+                         (incoming().diff(existing()).affectedKeys().hasOnly(['status']) && incoming().status in ['rejected', 'ended']) ||
+                         // Action: Set Offer
+                         (incoming().diff(existing()).affectedKeys().hasOnly(['offer']) && !('offer' in existing()))
+                       )) ||
+                       // Action during 'accepted' phase
+                       (existing().status == 'accepted' && (
+                         // Action: End Call
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status']) && incoming().status == 'ended'
+                       ))
                      );
       allow delete: if isSignedIn() && (request.auth.uid in existing().participants);
 
