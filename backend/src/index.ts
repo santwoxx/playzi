@@ -29,16 +29,12 @@ function ensureFirebaseInitialized() {
   }
 
   try {
-    const formattedPrivateKey = privateKey.includes('-----BEGIN PRIVATE KEY-----')
-      ? privateKey.replace(/\\n/g, '\n')
-      : privateKey;
-
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId,
         clientEmail,
-        privateKey: formattedPrivateKey,
-      }),
+        privateKey: privateKey.replace(/\\n/g, '\n')
+      })
     });
     console.log('Firebase Admin initialized successfully (lazy initialization).');
   } catch (error) {

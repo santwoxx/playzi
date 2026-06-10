@@ -38,6 +38,11 @@ service cloud.firestore {
       return data.keys().hasAll(['nickname', 'onboarded']) &&
              data.nickname is string && data.nickname.size() >= 1 && data.nickname.size() <= 32 &&
              data.onboarded is bool &&
+             (!('role' in data)) &&
+             (!('plan' in data)) &&
+             (!('permissions' in data)) &&
+             (!('isVip' in data)) &&
+             (!('vipExpiresAt' in data)) &&
              (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
              (!('country' in data) || (data.country is string && data.country.size() <= 100)) &&
              (!('currentIntent' in data) || (data.currentIntent in ['playing', 'chatting', 'competitive', 'friendship'])) &&
@@ -90,6 +95,8 @@ service cloud.firestore {
           (incoming().diff(existing()).affectedKeys().hasOnly(['xp', 'level', 'coins', 'gems', 'rankTitle', 'lastLoginAt', 'streak', 'victories', 'tickets', 'lastRewardDate', 'medals', 'achievements', 'reputation', 'status', 'fcmToken', 'fcmTokens', 'updatedAt']))
         )
       );
+
+      allow delete: if isOwner(userId);
 
       match /notifications/{notificationId} {
         allow read: if isOwner(userId);
