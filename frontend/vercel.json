@@ -10,6 +10,21 @@
       ],
       "destination": "https://playzi.app.br/$1",
       "permanent": true
+    },
+    {
+      "source": "/comunidades/dating",
+      "destination": "/relacionamento",
+      "permanent": true
+    },
+    {
+      "source": "/comunidades/friendship",
+      "destination": "/conhecer-pessoas",
+      "permanent": true
+    },
+    {
+      "source": "/comunidades/:slug(valorant|lol|fortnite|cod)",
+      "destination": "/communities",
+      "permanent": true
     }
   ],
   "rewrites": [

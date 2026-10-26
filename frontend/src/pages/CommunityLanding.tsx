@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ChevronLeft, Users, Zap, Trophy, MessageCircle, Gamepad2, Star, ShieldCheck } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -20,11 +20,11 @@ const COMMUNITY_SEO_DATA: Record<string, any> = {
   },
   'roblox': {
     title: 'Grupos de Roblox | Amizades e Jogos Online',
-    description: 'Explore o universo Roblox com novos amigos. Encontre grupos de Blox Fruits, Brookhaven e muito mais. Chat seguro e divertido para todos.',
+    description: 'Explore o universo Roblox com novos amigos. Encontre grupos de Blox Fruits, Brookhaven e muito mais.',
     h1: 'Explorar o Multiverso Roblox',
     benefits: [
       'Grupos específicos para Blox Fruits e RP',
-      'Ambiente seguro e moderado para todas as idades',
+      'Chat da comunidade para combinar partidas',
       'Trocas de itens e dicas de mapas populares',
       'Crie seu próprio squad para eventos mundiais'
     ],
@@ -59,23 +59,30 @@ const COMMUNITY_SEO_DATA: Record<string, any> = {
   }
 };
 
+// These slugs became dedicated pages (they used to show the Free Fire content)
+const MOVED_TO_TOPIC_PAGES: Record<string, string> = {
+  dating: '/relacionamento',
+  friendship: '/conhecer-pessoas'
+};
+
 export default function CommunityLanding() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const data = COMMUNITY_SEO_DATA[slug || ''] || COMMUNITY_SEO_DATA['freefire'];
+  const data = COMMUNITY_SEO_DATA[slug || ''];
+
+  if (slug && MOVED_TO_TOPIC_PAGES[slug]) return <Navigate to={MOVED_TO_TOPIC_PAGES[slug]} replace />;
+  // Unknown communities used to render a copy of the Free Fire page (duplicate content)
+  if (!data) return <Navigate to="/communities" replace />;
 
   const communitySchema = {
     "@context": "https://schema.org",
-    "@type": "ItemPage",
-    "mainEntity": {
-      "@type": "GameServer", // Best fit for a gaming community/squad finder
-      "name": data.h1,
-      "description": data.description,
-      "url": `https://playzi.app.br/comunidades/${slug}`,
-      "gameItem": {
-        "@type": "VideoGame",
-        "name": slug?.replace('-', ' ')
-      }
+    "@type": "WebPage",
+    "name": data.h1,
+    "description": data.description,
+    "url": `https://playzi.app.br/comunidades/${slug}`,
+    "about": {
+      "@type": "VideoGame",
+      "name": data.h1
     }
   };
 
@@ -167,23 +174,9 @@ export default function CommunityLanding() {
                      </div>
                   </div>
 
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center justify-between text-xs font-bold text-white/60">
-                      <span>Membros Ativos</span>
-                      <span className="text-vibe-neon-blue">1.2k+</span>
-                    </div>
-                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-vibe-neon-blue w-[85%] shadow-glow-blue" />
-                    </div>
-                    <div className="flex -space-x-2">
-                      {[1,2,3,4,5].map(i => (
-                        <img key={i} src={`https://picsum.photos/seed/seo${i}/40/40`} className="w-8 h-8 rounded-full border-2 border-vibe-bg" />
-                      ))}
-                      <div className="w-8 h-8 rounded-full bg-vibe-border flex items-center justify-center text-[8px] font-black border-2 border-vibe-bg">
-                        +240
-                      </div>
-                    </div>
-                  </div>
+                  <p className="text-sm text-white/70 leading-relaxed mb-8">
+                    Entre com sua conta Google para conversar no chat da comunidade e encontrar gente para jogar.
+                  </p>
 
                   <Link 
                     to={`/communities/${slug}`}
@@ -202,11 +195,11 @@ export default function CommunityLanding() {
             <div className="grid grid-cols-2 gap-4">
                <div className="vibe-card p-4 border-white/5 flex flex-col items-center text-center space-y-2">
                   <Trophy className="w-6 h-6 text-yellow-500" />
-                  <span className="text-[9px] font-black text-white uppercase italic">Ranking Semanal</span>
+                  <span className="text-[9px] font-black text-white uppercase italic">Ranking de Jogadores</span>
                </div>
                <div className="vibe-card p-4 border-white/5 flex flex-col items-center text-center space-y-2">
                   <ShieldCheck className="w-6 h-6 text-green-500" />
-                  <span className="text-[9px] font-black text-white uppercase italic">Moderado por IA</span>
+                  <span className="text-[9px] font-black text-white uppercase italic">Chat em Tempo Real</span>
                </div>
             </div>
 
