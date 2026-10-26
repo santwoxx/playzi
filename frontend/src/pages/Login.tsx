@@ -31,10 +31,13 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-vibe-bg flex flex-col relative overflow-x-hidden overflow-y-auto">
-      <SEO 
-        title="Playzi Login - Aplicativo para Conversar, Video Chamada 1v1 e IA" 
-        description="Entre na Playzi! O melhor aplicativo para conversar com pessoas e IA por chat de video 1v1 gratis ou bate-papo gamer. Encontre amigos, faça video chamada online e jogue. A melhor alternativa ao OmeTV e Omegle no Brasil." 
-        keywords="playzi login, entrar playzi, aplicativo para conversar, conversar com pessoas, conversar com ia, ometv, ome tv, video chamada gratis, chamada de video online, chat video chamada, alternativa ometv"
+      {/* Search engines browse signed out, so this screen is the indexed home page.
+          It also renders on every members-only URL: the canonical points them all to the home page. */}
+      <SEO
+        title="Chat ao vivo para conhecer pessoas e fazer amizades"
+        description="Converse ao vivo, conheça pessoas novas e faça amizades que curtem os mesmos jogos e interesses que você. Encontros para maiores de 18. Grátis no navegador e no celular."
+        keywords="chat ao vivo, conhecer pessoas, fazer amizades online, app de relacionamento, bate-papo online, aplicativo para conversar, playzi"
+        url="https://playzi.app.br/"
       />
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
         {/* Background Decorative Elements */}
@@ -63,7 +66,7 @@ export default function Login() {
 
           <h1 className="text-4xl font-black text-white mb-1 tracking-tighter uppercase neon-text-blue">Playzi</h1>
           <p className="text-vibe-muted mb-2 text-center font-bold text-[10px] uppercase tracking-[0.3em]">
-            PRIVACY • SECURITY • GAMING
+            CHAT • AMIZADES • GAMES
           </p>
           <div className="flex flex-col items-center space-y-1 mb-8">
             <p className="text-vibe-neon-blue font-black text-[12px] uppercase tracking-widest text-center animate-pulse">
@@ -126,9 +129,9 @@ export default function Login() {
           </div>
           
           <div className="mt-8 grid grid-cols-4 gap-3 w-full">
-              <LoginFeature icon={<Zap className="w-4 h-4" />} label="Speed" />
-              <LoginFeature icon={<ShieldCheck className="w-4 h-4" />} label="Secure" />
-              <LoginFeature icon={<Sparkles className="w-4 h-4" />} label="Pro" />
+              <LoginFeature icon={<Zap className="w-4 h-4" />} label="Ao vivo" />
+              <LoginFeature icon={<ShieldCheck className="w-4 h-4" />} label="Grátis" />
+              <LoginFeature icon={<Sparkles className="w-4 h-4" />} label="Social" />
               <button 
                 onClick={installApp}
                 className={cn(
@@ -142,8 +145,8 @@ export default function Login() {
           </div>
 
           <div className="mt-12 flex space-x-6 text-[9px] text-vibe-muted font-black uppercase tracking-[0.2em]">
-            <Link to="/privacy" className="hover:text-vibe-neon-blue transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-vibe-neon-blue transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-vibe-neon-blue transition-colors">Política de Privacidade</Link>
+            <Link to="/terms" className="hover:text-vibe-neon-blue transition-colors">Termos de Uso</Link>
           </div>
         </motion.div>
 
@@ -151,6 +154,34 @@ export default function Login() {
         <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
             style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
       </div>
+
+      {/* Readable description of the app for visitors and search engines */}
+      <section className="w-full max-w-3xl mx-auto px-6 pb-16 text-center space-y-6">
+        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+          Chat ao vivo para conhecer pessoas, fazer amizades e jogar junto
+        </h2>
+        <p className="text-sm text-vibe-muted leading-relaxed">
+          O Playzi é uma rede social gratuita para conversar ao vivo, conhecer pessoas novas que curtem os mesmos jogos e
+          interesses que você e encontrar gente para jogar. Para maiores de 18 anos, também tem o Encontros, para quem
+          procura um relacionamento. Funciona no navegador do celular e do computador.
+        </p>
+        <nav aria-label="Conheça o Playzi" className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+          {[
+            { to: '/chat-ao-vivo', title: 'Chat ao vivo', text: 'Bate-papo em tempo real, salas por jogo e mensagens privadas.' },
+            { to: '/conhecer-pessoas', title: 'Conhecer pessoas', text: 'Perfis com jogos e interesses para fazer amizades online.' },
+            { to: '/relacionamento', title: 'Relacionamento (18+)', text: 'Encontros com match por afinidade e conversa no privado.' }
+          ].map(item => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="vibe-card p-4 border-white/5 hover:border-vibe-neon-blue/30 transition-all space-y-1"
+            >
+              <span className="block text-sm font-black text-white">{item.title}</span>
+              <span className="block text-xs text-vibe-muted leading-relaxed">{item.text}</span>
+            </Link>
+          ))}
+        </nav>
+      </section>
 
       <SEOFooter />
     </div>
