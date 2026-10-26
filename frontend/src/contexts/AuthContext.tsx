@@ -81,7 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Redirect sign-in error:', error.code, error.message);
     });
 
-    return onAuthStateChanged(auth, async (firebaseUser) => {
+    // Presence listener of the signed-in account
+    let stopPresence: (() => void) | null = null;
+
+    const syncUser = async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // Presence logic
         const userStatusDatabaseRef = ref(rtdb, `/presence/${firebaseUser.uid}`);
@@ -94,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           lastSeen: rtdbTimestamp(),
         };
 
-        onValue(ref(rtdb, '.info/connected'), (snapshot) => {
+        stopPresence = onValue(ref(rtdb, '.info/connected'), (snapshot) => {
           if (snapshot.val() === false) return;
           onDisconnect(userStatusDatabaseRef).set(isOfflineForDatabase).then(() => {
             set(userStatusDatabaseRef, isOnlineForDatabase);
@@ -123,7 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: firebaseUser.email || null,
             displayName: nameFallback,
             nickname: nameFallback.slice(0, 32),
-            photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${firebaseUser.isAnonymous ? 'Guest' : firebaseUser.email || 'User'}&background=0D0E12&color=fff`,
+            // The fallback avatar uses the name, never the e-mail (photoURL is public and goes to a third-party service)
+            photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(nameFallback)}&background=0D0E12&color=fff`,
             bio: '',
             onboarded: false,
             favoriteGames: [],
@@ -167,8 +171,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch {}
         setCurrentUser(null);
       }
-      setLoading(false);
+    };
+
+    const stopAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      // Drop the previous account's presence listener (it kept writing after logout or account switch)
+      stopPresence?.();
+      stopPresence = null;
+      // Never leave the app stuck on the loader if loading the profile fails (offline, rules...)
+      syncUser(firebaseUser)
+        .catch((error) => console.error('Erro ao carregar a sessão:', error))
+        .finally(() => setLoading(false));
     });
+
+    return () => {
+      stopAuth();
+      stopPresence?.();
+    };
   }, []);
 
   const login = async (email: string, pass: string) => {
@@ -189,6 +207,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (popupError: any) {
+      // Closing the popup is the user's choice, not a reason to redirect the whole page
+      if (popupError?.code === 'auth/popup-closed-by-user' || popupError?.code === 'auth/cancelled-popup-request') return;
       console.warn("signInWithPopup falhou ou foi bloqueado, tentando signInWithRedirect...", popupError);
       await signInWithRedirect(auth, provider);
     }

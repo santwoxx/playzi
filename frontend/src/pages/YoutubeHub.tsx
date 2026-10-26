@@ -259,19 +259,23 @@ export default function YoutubeHub() {
     { name: "Doge Dance", url: "https://media.giphy.com/media/hTAsf9O5YfPMFasZ9g/giphy.gif" },
   ];
 
+  // Check username & identity profiles
+  const userNick = currentUser?.nickname || currentUser?.displayName || 'Jogador';
+  const userAvatar = (currentUser?.photoURL && !currentUser.photoURL.startsWith('data:')) 
+    ? currentUser.photoURL 
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(userNick)}&background=random`;
+
   const handleSendSticker = (stickerUrl: string) => {
     if (!roomId || !currentUser) return;
     const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
-    const newMsgRef = push(chatRef);
-    set(newMsgRef, {
+    push(chatRef, {
       uid: currentUser.uid,
       username: userNick,
       avatar: userAvatar,
       text: `[STICKER]: ${stickerUrl}`,
       timestamp: Date.now()
-    }).then(() => {
-      setShowStickerPanel(false);
-    }).catch(e => console.error(e));
+    }).catch(e => console.error("Erro no sticker:", e));
+    setShowStickerPanel(false);
   };
   const [chromeUrlInput, setChromeUrlInput] = useState('');
 
@@ -280,10 +284,6 @@ export default function YoutubeHub() {
   const isSyncingRef = useRef<boolean>(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const ytContainerId = "youtube-hub-iframe-player";
-
-  // Check username & identity profiles
-  const userNick = currentUser?.nickname || currentUser?.displayName || 'Jogador';
-  const userAvatar = currentUser?.photoURL || `https://ui-avatars.com/api/?name=${userNick}&background=random`;
 
   // Dynamic tags
   const QUICK_TAGS = ['Minecraft', 'Roblox', 'GTA trailer', 'Lofi Girl', 'MrBeast', 'Minecraft Cave Update', 'Nintendo Direct'];
@@ -943,7 +943,7 @@ export default function YoutubeHub() {
   }
 
   return (
-    <div className="min-h-screen bg-[#06020c] text-slate-100 select-none pb-12 relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#06020c] text-slate-100 select-none pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pt-0 md:pb-12 relative overflow-x-hidden">
       <SEO title={roomId ? `Playzi YouTube Hub | Sala ${roomId}` : "Playzi YouTube Hub - Rave Sincronizado"} />
       
       {/* Background Decorative Grid */}

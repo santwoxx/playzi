@@ -280,7 +280,8 @@ function AuthenticatedApp() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="*" element={<Navigate to="/onboarding" />} />
+          {/* Keep the query string so invite links (?ref=CODE) reach the onboarding */}
+          <Route path="*" element={<Navigate to={{ pathname: '/onboarding', search: location.search }} replace />} />
         </Routes>
       </Suspense>
     );
@@ -316,7 +317,9 @@ function AuthenticatedApp() {
       <div className={cn("flex flex-col items-center w-full min-h-screen", showNavs && "lg:pl-64")}>
         {showNavs && <div className="lg:hidden w-full"><Navbar onInboxOpen={() => setIsInboxOpen(true)} /></div>}
         <NotificationBar />
-        <QuickInbox isOpen={isInboxOpen} onClose={() => setIsInboxOpen(false)} />
+        <Suspense fallback={null}>
+          <QuickInbox isOpen={isInboxOpen} onClose={() => setIsInboxOpen(false)} />
+        </Suspense>
         <FloatingGrowthWidgets />
         <main className={cn(
           "w-full relative transition-all duration-300", 

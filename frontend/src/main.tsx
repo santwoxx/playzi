@@ -6,9 +6,10 @@ import './index.css';
 import './lib/i18n';
 import { nativeService } from './services/nativeService';
 import { registerSW } from 'virtual:pwa-register';
+import { Capacitor } from '@capacitor/core';
 
-// Register PWA Service Worker with auto-update
-if (!('capacitor' in window)) {
+// Register PWA Service Worker with auto-update (web only: the native app must not cache itself)
+if (!Capacitor.isNativePlatform()) {
   registerSW({
     onNeedRefresh() {
       if (confirm('Novo conteúdo disponível! Deseja atualizar agora?')) {

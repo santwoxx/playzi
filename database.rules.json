@@ -22,7 +22,7 @@
         },
         "hostAvatar": {
           ".write": "auth != null && newData.parent().child('host').val() === auth.uid && data.parent().child('users').child(auth.uid).child('online').val() === true && (!data.parent().child('host').exists() || data.parent().child('users').child(data.parent().child('host').val()).child('online').val() !== true)",
-          ".validate": "newData.isString() && newData.val().length <= 2048"
+          ".validate": "newData.isString()"
         },
         "playing": {
           ".write": "auth != null && data.parent().child('allowControl').val() === true && data.parent().child('users').child(auth.uid).exists()",
@@ -55,13 +55,13 @@
               ".validate": "newData.isString() && newData.val().length <= 100"
             },
             "photoURL": {
-              ".validate": "newData.isString() && newData.val().length <= 2048"
+              ".validate": "newData.isString()"
             }
           }
         },
         "chat": {
           "$msgId": {
-            ".write": "auth != null && !data.exists() && newData.exists() && root.child('rooms').child($roomId).child('users').child(auth.uid).exists()",
+            ".write": "auth != null && !data.exists() && newData.exists()",
             ".validate": "newData.hasChildren(['uid', 'text', 'timestamp']) && newData.child('text').isString() && newData.child('text').val().length <= 3000 && newData.child('timestamp').isNumber() && (newData.child('uid').val() === auth.uid || (newData.child('uid').val() === 'system' && newData.child('by').val() === auth.uid))"
           }
         },

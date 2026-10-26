@@ -1,26 +1,5 @@
 import { apiService } from '../services/apiService';
-
-// Shrinks the image before upload so the moderation request stays small and cheap
-function downscaleImage(dataUrl: string, maxSize = 768): Promise<string | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(img.width * scale));
-      canvas.height = Math.max(1, Math.round(img.height * scale));
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve(null);
-        return;
-      }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1] || null);
-    };
-    img.onerror = () => resolve(null);
-    img.src = dataUrl;
-  });
-}
+import { compressImage } from './image';
 
 /**
  * AI-powered content safety system.
@@ -52,9 +31,10 @@ export const SafetyService = {
     if (!imageDataUrl.startsWith('data:image/')) return true;
 
     try {
-      const image = await downscaleImage(imageDataUrl);
+      // A small copy keeps the moderation request light and cheap
+      const image = await compressImage(imageDataUrl, 768, 0.8);
       if (!image) return true;
-      const result = await apiService.moderateImage(image, 'image/jpeg');
+      const result = await apiService.moderateImage(image.split(',')[1], 'image/jpeg');
       return result.isSafe !== false;
     } catch (error) {
       console.error("Image safety check error:", error);

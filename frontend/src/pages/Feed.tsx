@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, limit, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Story, Post } from '../types';
 import StoryViewer from '../components/StoryViewer';
@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { apiService } from '../services/apiService';
 import { cn } from '../lib/utils';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import { Virtuoso } from 'react-virtuoso';
 
 import { useGamerStats } from '../hooks/useGamerStats';
@@ -146,8 +146,8 @@ export default function Feed() {
         
         // Reset streak if missed a day
         if (lastReward) {
-          const lastDate = new Date(lastReward);
-          const diff = differenceInDays(new Date(), lastDate);
+          // parseISO reads 'yyyy-MM-dd' as local midnight (new Date() reads it as UTC and broke streaks at night)
+          const diff = differenceInCalendarDays(new Date(), parseISO(lastReward));
           if (diff > 1) {
             newStreak = 1;
           }
@@ -206,9 +206,12 @@ export default function Feed() {
 
     // Stories fetch
     const now = new Date();
+    // Only stories that haven't expired yet, instead of every story ever posted
     const qStories = query(
        collection(db, 'stories'),
-       orderBy('createdAt', 'desc')
+       where('expiresAt', '>', now),
+       orderBy('expiresAt', 'desc'),
+       limit(100)
     );
     const unsubStories = onSnapshot(qStories, (snap) => {
        const allStories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Story));
@@ -302,7 +305,7 @@ export default function Feed() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => navigate('/create-post')}
+                  onClick={() => navigate('/create', { state: { type: 'story' } })}
                   className="absolute -bottom-1 -right-1 bg-vibe-neon-blue text-vibe-bg rounded-full p-1 border-2 border-vibe-bg shadow-lg hover:scale-110 active:scale-95 transition-all"
                 >
                    <Camera className="w-3 h-3" />

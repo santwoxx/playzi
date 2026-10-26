@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SafetyService } from '../lib/safetyService';
 import { securityUtils } from '../lib/security';
 import { cn } from '../lib/utils';
+import { compressImage, readFileAsDataURL, MAX_INLINE_MEDIA_BYTES } from '../lib/image';
 
 export default function CreatePost() {
   const { currentUser } = useAuth();
@@ -24,22 +25,32 @@ export default function CreatePost() {
   );
   const [bgColor, setBgColor] = useState('bg-vibe-bg');
 
+  // Media goes inline into the Firestore document (1 MiB cap): photos are compressed, videos must be small.
+  // A story stays a story when media is picked.
   const handleFiles = (files: FileList) => {
-    Array.from(files).forEach(file => {
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setMediaUrls(prev => [...prev, e.target?.result as string]);
-          setPostType('image');
-        };
-        reader.readAsDataURL(file);
-      } else if (file && file.type.startsWith('video/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setMediaUrls([e.target?.result as string]); // For now, only 1 video per post
-          setPostType('video');
-        };
-        reader.readAsDataURL(file);
+    Array.from(files).forEach(async (file) => {
+      try {
+        if (file.type.startsWith('image/')) {
+          const keepOriginal = file.type === 'image/gif' && file.size <= MAX_INLINE_MEDIA_BYTES; // keeps small GIFs animated
+          const dataUrl = keepOriginal ? await readFileAsDataURL(file) : await compressImage(file, 1080, 0.75);
+          if (!dataUrl) {
+            alert("Não foi possível ler esta imagem.");
+            return;
+          }
+          setMediaUrls(prev => [...prev, dataUrl]);
+          setPostType(prev => (prev === 'story' ? 'story' : 'image'));
+        } else if (file.type.startsWith('video/')) {
+          if (file.size > MAX_INLINE_MEDIA_BYTES) {
+            alert("Vídeo muito grande. Por enquanto, envie vídeos de até 700 KB.");
+            return;
+          }
+          const dataUrl = await readFileAsDataURL(file);
+          setMediaUrls([dataUrl]); // For now, only 1 video per post
+          setPostType(prev => (prev === 'story' ? 'story' : 'video'));
+        }
+      } catch (error) {
+        console.error("Erro ao ler arquivo:", error);
+        alert("Não foi possível ler este arquivo.");
       }
     });
   };
@@ -150,6 +161,7 @@ export default function CreatePost() {
       navigate('/');
     } catch (error) {
       console.error("Erro ao criar post:", error);
+      alert("Não foi possível publicar. Tente de novo com menos fotos ou um arquivo menor.");
     } finally {
       setIsSubmitting(false);
     }

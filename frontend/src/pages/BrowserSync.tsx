@@ -190,7 +190,10 @@ export default function BrowserSync() {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const userNick = currentUser?.nickname || currentUser?.displayName || 'Jogador';
-  const userAvatar = currentUser?.photoURL || `https://ui-avatars.com/api/?name=${userNick}&background=random`;
+  const userAvatar = (currentUser?.photoURL && !currentUser.photoURL.startsWith('data:')) 
+    ? currentUser.photoURL 
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(userNick)}&background=random`;
+  const [mobileTab, setMobileTab] = useState<'browser' | 'chat' | 'squad'>('browser');
 
   // --- PHASE 1: DISCOVER ACTIVE BROWSER ROOMS ---
   useEffect(() => {
@@ -506,16 +509,14 @@ export default function BrowserSync() {
     if (!msg || !roomId || !currentUser) return;
 
     const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
-    const newMsgRef = push(chatRef);
-    set(newMsgRef, {
+    push(chatRef, {
       uid: currentUser.uid,
       username: userNick,
       avatar: userAvatar,
       text: msg,
       timestamp: Date.now()
-    }).then(() => {
-      setChatInput('');
-    }).catch(e => console.error(e));
+    }).catch(e => console.error("Erro ao enviar mensagem no browser sync:", e));
+    setChatInput('');
   };
 
   const toggleGuestControls = async () => {
@@ -847,7 +848,7 @@ export default function BrowserSync() {
   // --- VIEW LAYOUT 1: PORTAL / DASHBOARD (List and Create) ---
   if (!roomId) {
     return (
-      <div className="pt-6 pb-nav min-h-screen px-4 sm:px-6 relative gaming-grid select-none">
+      <div className="pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pt-6 md:pb-nav min-h-screen px-4 sm:px-6 relative gaming-grid select-none">
         <SEO 
           title="Playzi Browser Sync - Navegue em Grupo na Internet" 
           description="Navegue na web de forma sincronizada em grupo perfeito. Veja vídeos, pesquise no Google e junte o squad."
@@ -1002,17 +1003,59 @@ export default function BrowserSync() {
 
   // --- VIEW LAYOUT 4: FULL-FEATURED PLAYER RAVE BROWSER REALTIME CO-BROWSE ROOM ---
   return (
-    <div className="pt-6 pb-nav min-h-screen px-4 font-sans text-white select-none relative max-w-6xl mx-auto">
+    <div className="pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pt-6 md:pb-nav min-h-screen px-2 sm:px-4 font-sans text-white select-none relative max-w-6xl mx-auto">
       <SEO 
         title={`Playzi Sync Browser - Co-Browse Room ${roomId}`} 
         description="Assista vídeos, pesquise na web de forma perfeitamente sincronizada em grupo direto no Chrome."
       />
 
+      {/* Mobile Tab Switcher */}
+      <div className="lg:hidden flex items-center bg-black/60 border border-white/10 p-1 rounded-2xl mb-3 shrink-0 backdrop-blur-md">
+        <button
+          type="button"
+          onClick={() => setMobileTab('browser')}
+          className={cn(
+            "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all",
+            mobileTab === 'browser' ? "bg-vibe-neon-purple text-white shadow-lg shadow-vibe-neon-purple/20" : "text-vibe-muted hover:text-white"
+          )}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span>Navegador</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('chat')}
+          className={cn(
+            "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all relative",
+            mobileTab === 'chat' ? "bg-vibe-neon-purple text-white shadow-lg shadow-vibe-neon-purple/20" : "text-vibe-muted hover:text-white"
+          )}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Chat</span>
+          {chatMessages.length > 0 && (
+            <span className="text-[8px] bg-vibe-neon-pink text-white px-1.5 py-0.2 rounded-full font-black">
+              {chatMessages.length}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('squad')}
+          className={cn(
+            "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all",
+            mobileTab === 'squad' ? "bg-vibe-neon-purple text-white shadow-lg shadow-vibe-neon-purple/20" : "text-vibe-muted hover:text-white"
+          )}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Squad ({participants.length})</span>
+        </button>
+      </div>
+
       {/* Main Room Container */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
         {/* LEFT COLUMN: Large Browser Viewport, Header, Presets */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className={cn("lg:col-span-3 space-y-4", mobileTab !== 'browser' && "hidden lg:block")}>
           
           {/* Room Banner Info */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-black/40 border border-white/5 p-4 rounded-2xl relative">
@@ -1134,7 +1177,7 @@ export default function BrowserSync() {
           </div>
 
           {/* Large Main Browser Emulation Canvas frame */}
-          <div className="h-[520px] bg-[#1a1a1a] rounded-3xl border border-white/10 overflow-hidden relative shadow-lg">
+          <div className="h-[50vh] min-h-[340px] sm:h-[520px] bg-[#1a1a1a] rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden relative shadow-lg">
             {renderBrowserContent()}
 
             {/* Host authoritative message bar if viewer is denied control */}
@@ -1191,10 +1234,10 @@ export default function BrowserSync() {
         </div>
 
         {/* RIGHT COLUMN: Realtime Presence & Sync Chat */}
-        <div className="space-y-4">
+        <div className={cn("space-y-4", mobileTab === 'browser' && "hidden lg:block")}>
           
           {/* Active Presence Panel */}
-          <div className="vibe-card bg-black/40 border-white/5 p-4 rounded-2xl space-y-3 shrink-0">
+          <div className={cn("vibe-card bg-black/40 border-white/5 p-4 rounded-2xl space-y-3 shrink-0", mobileTab === 'chat' && "hidden lg:block")}>
             <div className="flex items-center justify-between border-b border-white/5 pb-2">
               <span className="text-xs font-black uppercase tracking-widest text-[#00f2ff] flex items-center">
                 <Users className="w-3.5 h-3.5 mr-1.5" /> Presença Online
@@ -1226,7 +1269,7 @@ export default function BrowserSync() {
           </div>
 
           {/* Sync Chat Card */}
-          <div className="vibe-card bg-black/40 border-white/5 p-4 rounded-2xl flex flex-col h-[400px]">
+          <div className={cn("vibe-card bg-black/40 border-white/5 p-4 rounded-2xl flex flex-col h-[calc(100dvh-15rem)] lg:h-[400px]", mobileTab === 'squad' && "hidden lg:flex")}>
             <div className="flex items-center space-x-2 border-b border-white/5 pb-2 mb-2 shrink-0">
               <MessageSquare className="w-4 h-4 text-vibe-neon-purple animate-pulse" />
               <span className="text-xs font-black uppercase tracking-widest text-vibe-text">Sync Chat</span>

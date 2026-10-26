@@ -22,25 +22,13 @@ export default function Explore() {
   const fetchExplorePosts = async (tag?: string) => {
     setLoading(true);
     try {
-      const postsRef = collection(db, 'posts');
-      let q;
-      
-      if (tag) {
-        // Simple hashtag search (depends on how hashtags are stored, assuming they are in caption)
-        // Note: Firestore doesn't support partial string match easily with hashtags without an array
-        // For now, let's assume popular posts or basic keyword match
-        q = query(
-          postsRef,
-          orderBy('likes', 'desc'),
-          limit(24)
-        );
-      } else {
-        q = query(
-          postsRef,
-          orderBy('likes', 'desc'),
-          limit(24)
-        );
-      }
+      // orderBy('likes') on an array sorts by the likers' ids, not by how many likes a post has.
+      // Fetch the most recent posts and rank them by like count on the client instead.
+      const q = query(
+        collection(db, 'posts'),
+        orderBy('createdAt', 'desc'),
+        limit(100)
+      );
 
       const snapshot = await getDocs(q);
       const fetchedPosts = snapshot.docs.map(doc => {
@@ -57,7 +45,7 @@ export default function Explore() {
         setPosts(fetchedPosts.filter(p => p.caption?.toLowerCase().includes(`#${tag.toLowerCase()}`)));
       } else {
         // Sort by likes count since we can't easily query on array length in Firestore
-        setPosts(fetchedPosts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0)));
+        setPosts(fetchedPosts.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0)).slice(0, 24));
       }
     } catch (error) {
       console.error('Error fetching explore posts:', error);

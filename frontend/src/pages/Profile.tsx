@@ -44,7 +44,7 @@ function getCountryEmoji(country: string) {
   return flags[country] || '🌐';
 }
 
-const APP_URL = "https://playzi-snowy.vercel.app";
+const APP_URL = "https://playzi.app.br";
 
 function LinkIconComponent({ type }: { type: string }) {
   switch (type) {

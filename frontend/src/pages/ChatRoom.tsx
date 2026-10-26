@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, FormEvent, ChangeEvent, memo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDoc, deleteDoc, limitToLast } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Message, User, Chat } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { ArrowLeft, Info, Send, Camera, Smile, ChevronRight, EyeOff, Trash2, Clo
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { decryptMessage } from '../lib/encryption';
+import { compressImage, readFileAsDataURL, MAX_INLINE_MEDIA_BYTES } from '../lib/image';
 import { sendNotification } from '../services/notificationService';
 import { apiService } from '../services/apiService';
 
@@ -122,7 +123,8 @@ export default function ChatRoom() {
     });
 
     // Messages
-    const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'));
+    // Only the latest messages, instead of downloading the whole history on every open
+    const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt', 'asc'), limitToLast(100));
     const msgUnsub = onSnapshot(q, (snapshot) => {
       const allMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       // Client-side expiry filtering for "Auto-destruição"
@@ -193,31 +195,36 @@ export default function ChatRoom() {
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // lets the same file be picked again
     if (!file || !chatId || !currentUser || !chatData) return;
+
+    const isImage = file.type.startsWith('image');
+    if (!isImage && file.size > MAX_INLINE_MEDIA_BYTES) {
+      alert("Vídeo muito grande. Por enquanto, envie vídeos de até 700 KB.");
+      return;
+    }
 
     setIsUploading(true);
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
+      // Photos are compressed so the message fits the API body and the Firestore document limits
+      const mediaUrl = isImage ? await compressImage(file, 1080, 0.7) : await readFileAsDataURL(file);
+      if (!mediaUrl) throw new Error("Não foi possível ler este arquivo.");
 
-        const expiresAt = chatData.security?.autoDelete24h
-          ? new Date(Date.now() + 24 * 60 * 60 * 1000)
-          : null;
+      const expiresAt = chatData.security?.autoDelete24h
+        ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+        : null;
 
-        await apiService.sendMessage(chatId, file.type.startsWith('image') ? '📷 Foto' : '🎥 Vídeo', {
-          mediaUrl: base64String,
-          mediaType: file.type.startsWith('image') ? 'image' : 'video',
-          isEncrypted: false,
-          expiresAt: expiresAt?.toISOString()
-        });
-
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
+      await apiService.sendMessage(chatId, isImage ? '📷 Foto' : '🎥 Vídeo', {
+        mediaUrl,
+        mediaType: isImage ? 'image' : 'video',
+        isEncrypted: false,
+        expiresAt: expiresAt?.toISOString()
+      });
+    } catch (error: any) {
       console.error("Erro no upload:", error);
+      alert(error?.message || "Não foi possível enviar a mídia.");
+    } finally {
       setIsUploading(false);
     }
   };
@@ -275,7 +282,8 @@ export default function ChatRoom() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 no-scrollbar pb-10">
+      {/* data-clarity-mask: private messages must not show up in Microsoft Clarity session recordings */}
+      <div data-clarity-mask="True" className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 no-scrollbar pb-10">
         {messages.map((msg, index) => (
           <MessageItem 
             key={msg.id}
@@ -363,7 +371,7 @@ export default function ChatRoom() {
                  </div>
                  <div>
                     <h3 className="text-lg font-black">{chatData?.security?.isAnonymous ? 'Conversa Anônima' : (recipient?.nickname || recipient?.displayName)}</h3>
-                    <p className="text-xs text-vibe-muted lowercase truncate max-w-[200px]">{chatData?.security?.isAnonymous ? 'Identidades Ocultas' : recipient?.email}</p>
+                    <p className="text-xs text-vibe-muted lowercase truncate max-w-[200px]">{chatData?.security?.isAnonymous ? 'Identidades Ocultas' : (recipient?.statusMessage || '')}</p>
                  </div>
               </div>
 

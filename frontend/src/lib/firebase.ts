@@ -40,4 +40,7 @@ export const db = firestoreDb;
 export const rtdb = getDatabase(app);
 
 // Messaging apenas para WEB. No Android usamos o plugin nativo do Capacitor.
-export const messaging = (typeof window !== 'undefined' && !Capacitor.isNativePlatform()) ? getMessaging(app) : null;
+// Navegadores embutidos (Instagram, TikTok...) não têm Service Worker/Push e o getMessaging() derrubaria o app.
+const supportsWebPush = typeof window !== 'undefined' &&
+  'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+export const messaging = (supportsWebPush && !Capacitor.isNativePlatform()) ? getMessaging(app) : null;

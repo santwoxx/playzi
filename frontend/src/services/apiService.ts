@@ -21,8 +21,9 @@ export const apiService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'API Request failed');
+      // Error bodies are not always JSON (e.g. a host or proxy "Not Found" page)
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error || `Serviço indisponível no momento (erro ${response.status}).`);
     }
 
     return response.json();

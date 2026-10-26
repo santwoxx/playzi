@@ -12,9 +12,12 @@ export default function Rankings() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('xp', 'desc'), limit(10));
+    // XP restarts at every level-up, so rank by level first and use XP only as the tiebreaker
+    const q = query(collection(db, 'users'), orderBy('level', 'desc'), limit(50));
     return onSnapshot(q, (snapshot) => {
-      setTopUsers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
+      const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+      users.sort((a, b) => (b.level || 0) - (a.level || 0) || (b.xp || 0) - (a.xp || 0));
+      setTopUsers(users.slice(0, 10));
       setLoading(false);
     });
   }, []);

@@ -184,19 +184,23 @@ export default function WatchParty() {
     { name: "Doge Dance", url: "https://media.giphy.com/media/hTAsf9O5YfPMFasZ9g/giphy.gif" },
   ];
 
+  // Check user values
+  const userNick = currentUser?.nickname || currentUser?.displayName || 'Jogador';
+  const userAvatar = (currentUser?.photoURL && !currentUser.photoURL.startsWith('data:')) 
+    ? currentUser.photoURL 
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(userNick)}&background=random`;
+
   const handleSendSticker = (stickerUrl: string) => {
     if (!roomId || !currentUser) return;
     const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
-    const newMsgRef = push(chatRef);
-    set(newMsgRef, {
+    push(chatRef, {
       uid: currentUser.uid,
       username: userNick,
       avatar: userAvatar,
       text: `[STICKER]: ${stickerUrl}`,
       timestamp: Date.now()
-    }).then(() => {
-      setShowStickerPanel(false);
-    }).catch(e => console.error(e));
+    }).catch(e => console.error("Erro no sticker:", e));
+    setShowStickerPanel(false);
   };
 
   // HTML5 and YouTube Player DOM / API refs
@@ -205,10 +209,6 @@ export default function WatchParty() {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const isSyncingRef = useRef<boolean>(false);
   const ytContainerId = "youtube-player-frame";
-
-  // Check user values
-  const userNick = currentUser?.nickname || currentUser?.displayName || 'Jogador';
-  const userAvatar = currentUser?.photoURL || `https://ui-avatars.com/api/?name=${userNick}&background=random`;
 
   // --- PHASE 1: LOAD ROOMS LIST FOR PORTAL VIEW ---
   useEffect(() => {
@@ -829,16 +829,14 @@ export default function WatchParty() {
     if (!msg || !roomId || !currentUser) return;
 
     const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
-    const newMsgRef = push(chatRef);
-    set(newMsgRef, {
+    push(chatRef, {
       uid: currentUser.uid,
       username: userNick,
       avatar: userAvatar,
       text: msg,
       timestamp: Date.now()
-    }).then(() => {
-      setChatInput('');
-    }).catch(e => console.error(e));
+    }).catch(e => console.error("Erro ao enviar mensagem:", e));
+    setChatInput('');
   };
 
   const handleVideoChange = async (e: FormEvent) => {
@@ -914,7 +912,7 @@ export default function WatchParty() {
   // --- VIEW LAYOUT 1: PORTAL / DASHBOARD (List and Create) ---
   if (!roomId) {
     return (
-      <div className="pt-6 pb-20 min-h-screen px-4 sm:px-6 relative gaming-grid select-none text-slate-100">
+      <div className="pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pt-6 md:pb-20 min-h-screen px-4 sm:px-6 relative gaming-grid select-none text-slate-100">
         <SEO 
           title="Playzi Sync - Rave Co-Browse & Watch Party" 
           description="Assista vídeos sincronizados e navegue na web em tempo real com amigos sem lag."
@@ -1193,7 +1191,7 @@ export default function WatchParty() {
 
   // --- VIEW LAYOUT 4: FULL-FEATURED PLAYER RAVE SYNC ROOM ---
   return (
-    <div className="md:pt-6 md:pb-nav min-h-screen md:px-4 font-sans text-white select-none relative md:max-w-5xl md:mx-auto flex flex-col md:block h-screen md:h-auto overflow-hidden md:overflow-visible">
+    <div className="pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pt-6 md:pb-nav min-h-screen md:px-4 font-sans text-white select-none relative md:max-w-5xl md:mx-auto flex flex-col md:block h-[100dvh] md:h-auto overflow-hidden md:overflow-visible">
       <SEO 
         title={`Playzi Sync - Assistindo em Grupo Room ${roomId}`} 
         description="Assista vídeos sincronizados em tempo real com seu squad com chat de presença integrado."
@@ -1665,7 +1663,7 @@ export default function WatchParty() {
             </form>
 
             {/* Incredibly polished Mobile footer bar matching the user's design image */}
-            <div className="md:hidden pt-2 border-t border-white/5 flex items-center gap-2shrink-0">
+            <div className="md:hidden p-2 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center gap-2 shrink-0">
               
               {/* Mic / Voice toggle on webrtc context simulation */}
               <button
