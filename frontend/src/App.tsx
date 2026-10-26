@@ -87,11 +87,11 @@ const DesktopSidebar = memo(({ onInboxOpen }: { onInboxOpen: () => void }) => {
   
   const navItems = useMemo(() => [
     { icon: Home, label: 'Feed', path: '/' },
+    { icon: PlayCircle, label: 'Playzi Sync', path: '/watch', badge: 'Ao vivo' },
     { icon: Search, label: 'Bússola', path: '/explore' },
     { icon: Heart, label: 'Encontros', path: '/encontros' },
     { icon: Gamepad2, label: 'Jogar', path: '/jogar-agora' },
     { icon: MessageSquare, label: 'Directs', path: '/chat', action: onInboxOpen },
-    { icon: PlayCircle, label: 'Playzi Sync', path: '/watch' },
     { icon: UsersIcon, label: 'Grupos', path: '/communities' },
     { icon: User, label: 'Meu Perfil', path: '/profile' },
   ], [onInboxOpen]);
@@ -101,7 +101,9 @@ const DesktopSidebar = memo(({ onInboxOpen }: { onInboxOpen: () => void }) => {
     { icon: Share2, label: 'Convidar Squad', path: '/profile', color: 'text-vibe-neon-pink' }
   ], []);
 
-  const isActive = (path: string) => location.pathname === path;
+  // Playzi Sync stays highlighted inside its rooms too (/watch/...)
+  const isActive = (path: string) =>
+    path === '/watch' ? location.pathname.startsWith('/watch') : location.pathname === path;
 
   return (
     <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-64 border-r border-white/5 bg-black p-6 z-50">
@@ -145,6 +147,12 @@ const DesktopSidebar = memo(({ onInboxOpen }: { onInboxOpen: () => void }) => {
               <span className={cn("font-bold text-xs uppercase tracking-widest", active ? "opacity-100" : "opacity-80")}>
                 {item.label}
               </span>
+              {item.badge && (
+                <span className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 text-[9px] font-black uppercase tracking-widest text-red-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -220,7 +228,8 @@ function AuthenticatedApp() {
       '/arcade',
       '/conhecer-pessoas',
       '/chat-ao-vivo',
-      '/relacionamento'
+      '/relacionamento',
+      '/assistir-juntos'
     ];
 
     const isPublicRoute = 
@@ -259,6 +268,7 @@ function AuthenticatedApp() {
                   <Route path="/conhecer-pessoas" element={<TopicLanding topic="conhecer-pessoas" />} />
                   <Route path="/chat-ao-vivo" element={<TopicLanding topic="chat-ao-vivo" />} />
                   <Route path="/relacionamento" element={<TopicLanding topic="relacionamento" />} />
+                  <Route path="/assistir-juntos" element={<TopicLanding topic="assistir-juntos" />} />
                   <Route path="/arcade" element={<Arcade />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/terms" element={<TermsOfService />} />
@@ -372,6 +382,7 @@ function AuthenticatedApp() {
                 <Route path="/conhecer-pessoas" element={<TopicLanding topic="conhecer-pessoas" />} />
                 <Route path="/chat-ao-vivo" element={<TopicLanding topic="chat-ao-vivo" />} />
                 <Route path="/relacionamento" element={<TopicLanding topic="relacionamento" />} />
+                <Route path="/assistir-juntos" element={<TopicLanding topic="assistir-juntos" />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />

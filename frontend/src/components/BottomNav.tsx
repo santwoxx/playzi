@@ -8,12 +8,14 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  // Playzi Sync stays highlighted inside its rooms too (/watch/...)
+  const isActive = (path: string) =>
+    path === '/watch' ? location.pathname.startsWith('/watch') : location.pathname === path;
 
   const navItems = [
     { icon: Home, label: 'Feed', path: '/' },
     { icon: Search, label: 'Bússola', path: '/explore' },
-    { icon: PlayCircle, label: 'Lives', path: '/watch' },
+    { icon: PlayCircle, label: 'Sync', path: '/watch', highlight: true },
     { icon: Heart, label: 'Match', path: '/encontros' },
     { icon: Gamepad2, label: 'Jogar', path: '/jogar-agora' },
     { icon: User, label: 'Perfil', path: '/profile' },
@@ -37,16 +39,22 @@ export default function BottomNav() {
                 active ? "text-white" : "text-vibe-muted hover:text-white"
               )}
             >
-              <div className="relative p-1.5 transition-all duration-300">
+              <div className={cn(
+                "relative p-1.5 transition-all duration-300",
+                item.highlight && "rounded-xl bg-gradient-to-br from-[#FF2E93] to-vibe-neon-purple text-white shadow-[0_0_14px_rgba(255,46,147,0.45)]"
+              )}>
                 <Icon className={cn(
-                  "w-6 h-6 transition-all duration-300", 
-                  active ? "scale-110 opacity-100" : "opacity-70 group-hover:opacity-100"
+                  "w-6 h-6 transition-all duration-300",
+                  active || item.highlight ? "scale-110 opacity-100" : "opacity-70 group-hover:opacity-100"
                 )} />
+                {item.highlight && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 border border-vibe-bg animate-pulse" />
+                )}
               </div>
-              
+
               <span className={cn(
                 "text-[9px] font-bold uppercase tracking-tighter mt-0.5 transition-all duration-300",
-                active ? "opacity-100" : "opacity-0"
+                active || item.highlight ? "opacity-100" : "opacity-0"
               )}>
                 {item.label}
               </span>

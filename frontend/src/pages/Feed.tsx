@@ -12,6 +12,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import CommentModal from '../components/CommentModal';
 import DailyRewardModal from '../components/DailyRewardModal';
 import InstantMatch from '../components/InstantMatch';
+import SyncSpotlight from '../components/SyncSpotlight';
 import SEOFooter from '../components/SEOFooter';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -336,6 +337,9 @@ export default function Feed() {
              );
           })}
         </div>
+
+        {/* Playzi Sync spotlight: watch YouTube together while chatting */}
+        <SyncSpotlight />
 
         <div className="px-4 py-4 mb-2 flex items-center justify-between">
            <div>

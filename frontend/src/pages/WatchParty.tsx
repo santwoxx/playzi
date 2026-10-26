@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSyncReactions, SyncReactionsOverlay, SyncReactionBar } from '../components/SyncReactions';
 import { useAuth } from '../contexts/AuthContext';
 import { rtdb } from '../lib/firebase';
 import { 
@@ -172,6 +173,9 @@ export default function WatchParty() {
   const [inputUrl, setInputUrl] = useState('');
   const [updatingUrl, setUpdatingUrl] = useState(false);
   const [showMobileHostControls, setShowMobileHostControls] = useState(false);
+
+  // Live emoji reactions that float over the video for everyone in the room
+  const { floating: floatingReactions, sendReaction } = useSyncReactions(roomId, currentUser?.uid);
   const [showStickerPanel, setShowStickerPanel] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
 
@@ -1276,14 +1280,22 @@ export default function WatchParty() {
               <div className="absolute inset-0 z-10 bg-transparent cursor-not-allowed" />
             )}
 
+            {/* Live reactions floating over the video */}
+            <SyncReactionsOverlay reactions={floatingReactions} />
+
             {/* Float Exit button on Mobile Screen */}
-            <button 
+            <button
               onClick={() => navigate('/watch')}
               className="md:hidden absolute top-3 right-3 z-30 p-2 bg-black/60 backdrop-blur border border-white/10 rounded-full text-white/80 hover:text-white"
               title="Sair da Sala"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
+          </div>
+
+          {/* Reactions for everyone in the room + invite */}
+          <div className="md:rounded-2xl overflow-hidden md:mt-2 shrink-0 z-10">
+            <SyncReactionBar onReact={sendReaction} onInvite={copyRoomLink} invited={copiedLink} />
           </div>
 
           {/* Mobile compact host playback control bar */}

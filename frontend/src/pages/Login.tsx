@@ -165,9 +165,10 @@ export default function Login() {
           interesses que você e encontrar gente para jogar. Para maiores de 18 anos, também tem o Encontros, para quem
           procura um relacionamento. Funciona no navegador do celular e do computador.
         </p>
-        <nav aria-label="Conheça o Playzi" className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+        <nav aria-label="Conheça o Playzi" className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
           {[
             { to: '/chat-ao-vivo', title: 'Chat ao vivo', text: 'Bate-papo em tempo real, salas por jogo e mensagens privadas.' },
+            { to: '/assistir-juntos', title: 'Playzi Sync', text: 'Assista vídeos do YouTube juntos enquanto conversa no chat.' },
             { to: '/conhecer-pessoas', title: 'Conhecer pessoas', text: 'Perfis com jogos e interesses para fazer amizades online.' },
             { to: '/relacionamento', title: 'Relacionamento (18+)', text: 'Encontros com match por afinidade e conversa no privado.' }
           ].map(item => (

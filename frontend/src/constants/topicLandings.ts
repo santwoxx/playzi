@@ -98,10 +98,53 @@ export const TOPIC_LANDINGS: Record<string, TopicLanding> = {
     appPath: '/chat/global',
     appLabel: 'Abrir o chat ao vivo',
     related: [
+      { label: 'Assistir vídeos do YouTube juntos', to: '/assistir-juntos' },
       { label: 'Conhecer pessoas', to: '/conhecer-pessoas' },
       { label: 'Relacionamento (18+)', to: '/relacionamento' },
       { label: 'Comunidades de games', to: '/communities' },
       { label: 'Como fazer amizades online jogando', to: '/blog/como-fazer-amizades-online-jogando' }
+    ]
+  },
+
+  'assistir-juntos': {
+    path: '/assistir-juntos',
+    seoTitle: 'Assistir vídeos do YouTube juntos online, com chat',
+    description: 'Crie uma sala no Playzi Sync e assista vídeos do YouTube com amigos no mesmo segundo, conversando no chat e reagindo ao vivo. Grátis.',
+    keywords: 'assistir junto, assistir youtube junto, watch party, assistir vídeos com amigos online, assistir junto online, sala para assistir vídeos',
+    badge: 'Playzi Sync',
+    h1: 'Assista vídeos do YouTube juntos e converse no chat',
+    intro: 'Com o Playzi Sync, todo mundo da sala vê o mesmo vídeo no mesmo segundo. Crie uma sala, escolha um vídeo do YouTube e chame a galera: dá para conversar no chat e mandar reações que aparecem na tela de todos enquanto vocês assistem.',
+    features: [
+      { title: 'Vídeo sincronizado', text: 'Quem cria a sala controla o play, o pause e o tempo do vídeo, e todo mundo acompanha junto.' },
+      { title: 'Chat ao vivo na sala', text: 'Converse com quem está assistindo, mande stickers e comente cada cena.' },
+      { title: 'Reações em tempo real', text: 'Toque num emoji e ele flutua sobre o vídeo para todo mundo da sala.' },
+      { title: 'Busca do YouTube integrada', text: 'Pesquise e troque o vídeo sem sair da sala.' }
+    ],
+    steps: [
+      'Entre com sua conta Google.',
+      'Crie uma sala do Playzi Sync e escolha um vídeo do YouTube.',
+      'Toque em Convidar, mande o link para a galera e assistam juntos conversando no chat.'
+    ],
+    safetyTitle: 'Para assistir junto com tranquilidade',
+    safetyTips: [
+      'Mande o link da sala só para quem você quer assistir junto.',
+      'O anfitrião decide se os outros também podem controlar o vídeo.',
+      'Respeite as diretrizes da comunidade: nada de conteúdo ofensivo ou impróprio.',
+      'Denuncie perfis abusivos pelo botão de denúncia no perfil.'
+    ],
+    faq: [
+      { q: 'O Playzi Sync é grátis?', a: 'Sim. Criar salas, assistir vídeos juntos e conversar no chat não custa nada.' },
+      { q: 'Todo mundo vê o vídeo ao mesmo tempo?', a: 'Sim. Se o anfitrião pausar ou avançar o vídeo, todos na sala acompanham automaticamente.' },
+      { q: 'Dá para conversar enquanto assiste?', a: 'Sim. Cada sala tem um chat ao vivo, com stickers e reações que aparecem em cima do vídeo.' },
+      { q: 'Funciona no celular?', a: 'Sim. O Playzi Sync funciona no navegador do celular e do computador.' }
+    ],
+    appPath: '/watch/youtube?criar=1',
+    appLabel: 'Criar uma sala agora',
+    related: [
+      { label: 'Chat ao vivo', to: '/chat-ao-vivo' },
+      { label: 'Conhecer pessoas', to: '/conhecer-pessoas' },
+      { label: 'Relacionamento (18+)', to: '/relacionamento' },
+      { label: 'Melhores jogos para fazer amigos online', to: '/blog/melhores-jogos-para-fazer-amigos-online' }
     ]
   },
 

@@ -65,6 +65,12 @@
             ".validate": "newData.hasChildren(['uid', 'text', 'timestamp']) && newData.child('text').isString() && newData.child('text').val().length <= 3000 && newData.child('timestamp').isNumber() && (newData.child('uid').val() === auth.uid || (newData.child('uid').val() === 'system' && newData.child('by').val() === auth.uid))"
           }
         },
+        "reactions": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['emoji', 'ts']) && newData.child('ts').isNumber() && (newData.child('emoji').val() === '❤️' || newData.child('emoji').val() === '😂' || newData.child('emoji').val() === '🔥' || newData.child('emoji').val() === '😮' || newData.child('emoji').val() === '👏' || newData.child('emoji').val() === '😢')"
+          }
+        },
         "browser": {
           ".write": "auth != null && (data.child('host').val() === auth.uid || (newData.child('host').val() === auth.uid && root.child('rooms').child($roomId).child('users').child(auth.uid).child('online').val() === true && (!data.child('host').exists() || root.child('rooms').child($roomId).child('users').child(data.child('host').val()).child('online').val() !== true)))",
           ".validate": "newData.hasChildren(['currentUrl', 'host'])",

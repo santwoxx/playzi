@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSyncReactions, SyncReactionsOverlay, SyncReactionBar } from '../components/SyncReactions';
 import { useAuth } from '../contexts/AuthContext';
 import { rtdb } from '../lib/firebase';
 import { 
@@ -249,6 +250,9 @@ export default function YoutubeHub() {
   const [showStickerPanel, setShowStickerPanel] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
   const [showMobileHostControls, setShowMobileHostControls] = useState(false);
+
+  // Live emoji reactions that float over the video for everyone in the room
+  const { floating: floatingReactions, sendReaction } = useSyncReactions(roomId, currentUser?.uid);
 
   const MOBILE_STICKERS = [
     { name: "Anya Calma", url: "https://media.giphy.com/media/X99M8D7B0M6X3c69U7/giphy.gif" },
@@ -808,8 +812,7 @@ export default function YoutubeHub() {
   };
 
   // --- PHASE 5: EVENT HANDLERS ---
-  const handleCreateRoom = async (e: FormEvent) => {
-    e.preventDefault();
+  const createRoom = async () => {
     if (!currentUser || creating) return;
 
     setCreating(true);
@@ -837,6 +840,20 @@ export default function YoutubeHub() {
       setCreating(false);
     }
   };
+
+  const handleCreateRoom = async (e: FormEvent) => {
+    e.preventDefault();
+    await createRoom();
+  };
+
+  // One-tap creation from shortcuts elsewhere in the app (/watch/youtube?criar=1)
+  const [searchParams] = useSearchParams();
+  const autoCreateRef = useRef(false);
+  useEffect(() => {
+    if (roomId || !currentUser || autoCreateRef.current || searchParams.get('criar') !== '1') return;
+    autoCreateRef.current = true;
+    createRoom();
+  }, [roomId, currentUser, searchParams]);
 
   // Join existing from Lobby List
   const handleJoinExistingRoom = (id: string) => {
@@ -1395,8 +1412,11 @@ export default function YoutubeHub() {
                     <div className="absolute inset-0 z-20 bg-transparent" />
                   )}
 
+                  {/* Live reactions floating over the video */}
+                  <SyncReactionsOverlay reactions={floatingReactions} />
+
                   {/* Float Exit button on Mobile Screen */}
-                  <button 
+                  <button
                     onClick={() => navigate('/watch/youtube')}
                     className="md:hidden absolute top-3 right-3 z-30 p-2 bg-black/60 backdrop-blur border border-white/10 rounded-full text-white/80 hover:text-white"
                     title="Sair da Sala"
@@ -1448,6 +1468,9 @@ export default function YoutubeHub() {
                     )}
                   </div>
                 </div>
+
+                {/* Reactions for everyone in the room + invite (the header with "Convidar" is hidden on mobile) */}
+                <SyncReactionBar onReact={sendReaction} onInvite={handleCopyLink} invited={copiedLink} />
               </div>
 
               {/* Host Expandable Controls (Mobile Drawer version) */}

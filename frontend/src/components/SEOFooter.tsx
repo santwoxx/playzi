@@ -7,6 +7,7 @@ const FOOTER_SECTIONS = [
     title: 'Conheça',
     links: [
       { to: '/chat-ao-vivo', label: 'Chat ao vivo' },
+      { to: '/assistir-juntos', label: 'Assistir vídeos juntos' },
       { to: '/conhecer-pessoas', label: 'Conhecer pessoas' },
       { to: '/relacionamento', label: 'Relacionamento (18+)' },
       { to: '/communities', label: 'Comunidades' }
@@ -62,7 +63,8 @@ export default function SEOFooter() {
           <p>
             Procurando um <strong>chat ao vivo</strong> para conversar, um app para <strong>fazer amizades online</strong> ou
             uma forma de <strong>conhecer pessoas novas</strong>? No Playzi você conversa em tempo real no chat global e nas
-            salas das comunidades, encontra gente com jogos e interesses em comum e continua o papo no privado. Para maiores
+            salas das comunidades, encontra gente com jogos e interesses em comum, continua o papo no privado e pode
+            até <strong>assistir vídeos do YouTube juntos</strong> no Playzi Sync. Para maiores
             de 18 anos, o Encontros é o espaço de quem procura um <strong>relacionamento</strong>: você curte perfis, dá match
             e conversa no seu ritmo.
           </p>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Globe, ArrowLeft, Users, Sparkles, Hash } from 'lucide-react';
+import { Send, Globe, ArrowLeft, Users, Sparkles, Hash, Tv } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
@@ -92,9 +92,14 @@ export default function GlobalChat() {
             </p>
           </div>
         </div>
-        <div className="bg-vibe-neon-blue/10 px-3 py-1 rounded-full border border-vibe-neon-blue/20">
-          <span className="text-[10px] font-black text-vibe-neon-blue uppercase">Online</span>
-        </div>
+        {/* Shortcut to Playzi Sync: creates a YouTube room in one tap */}
+        <button
+          onClick={() => navigate('/watch/youtube?criar=1')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF2E93]/15 border border-[#FF2E93]/30 text-[#FF2E93] hover:bg-[#FF2E93]/25 transition-colors"
+        >
+          <Tv className="w-3.5 h-3.5" />
+          <span className="text-[10px] font-black uppercase tracking-widest">Assistir junto</span>
+        </button>
       </div>
 
       {/* Messages */}

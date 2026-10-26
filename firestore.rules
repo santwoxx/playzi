@@ -378,21 +378,26 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() &&
                     incoming().ownerId == request.auth.uid &&
-                    incoming().members == [request.auth.uid] &&
+                    incoming().members is list &&
+                    request.auth.uid in incoming().members &&
                     incoming().name is string && incoming().name.size() >= 1 && incoming().name.size() <= 80 &&
                     (!('description' in incoming()) || (incoming().description is string && incoming().description.size() <= 2000));
       allow update: if isSignedIn() && (
         // Dono edita a comunidade, mas não transfere a posse
         (isOwner(existing().ownerId) && !changes().hasAny(['ownerId'])) ||
         // Qualquer um entra ou sai, mexendo só no próprio uid
-        (changes().hasOnly(['members']) && onlySelfToggled('members'))
+        (changes().hasOnly(['members']) && (
+          onlySelfToggled('members') ||
+          (request.auth.uid in existing().members && incoming().members is list && incoming().members.size() <= 500)
+        ))
       );
       allow delete: if isSignedIn() && isOwner(existing().ownerId);
 
       match /messages/{messageId} {
         allow read: if isSignedIn();
         allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
-                       incoming().text is string && incoming().text.size() >= 1 && incoming().text.size() <= 1000 &&
+                       ((!('text' in incoming()) || (incoming().text is string && incoming().text.size() <= 2000)) &&
+                        (!('mediaUrl' in incoming()) || (incoming().mediaUrl is string && incoming().mediaUrl.size() <= 2048))) &&
                        incoming().createdAt == request.time;
         allow delete: if isSignedIn() && (
           existing().userId == request.auth.uid ||
