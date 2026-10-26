@@ -232,8 +232,8 @@ export default function ChatList() {
            </div>
         </motion.div>
 
-        {/* List */}
-        <div className="space-y-3">
+        {/* List (masked in Clarity recordings: shows the last message of private chats) */}
+        <div data-clarity-mask="True" className="space-y-3">
           {visibleChats.length === 0 ? (
             <div className="text-center py-20 vibe-card border-dashed">
                <MessageSquare className="w-12 h-12 text-vibe-muted mx-auto mb-4 opacity-20" />

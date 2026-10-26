@@ -42,6 +42,7 @@ const PlayNow = lazy(() => import('./pages/PlayNow'));
 const WatchParty = lazy(() => import('./pages/WatchParty'));
 const BrowserSync = lazy(() => import('./pages/BrowserSync'));
 const YoutubeHub = lazy(() => import('./pages/YoutubeHub'));
+const TopicLanding = lazy(() => import('./pages/TopicLanding'));
 
 import InstallPrompt from './components/InstallPrompt';
 import SEOFooter from './components/SEOFooter';
@@ -216,7 +217,10 @@ function AuthenticatedApp() {
       '/terms',
       '/diretrizes',
       '/communities',
-      '/arcade'
+      '/arcade',
+      '/conhecer-pessoas',
+      '/chat-ao-vivo',
+      '/relacionamento'
     ];
 
     const isPublicRoute = 
@@ -233,10 +237,11 @@ function AuthenticatedApp() {
           <header className="w-full bg-black/60 backdrop-blur-md border-b border-white/5 py-4 px-6 fixed top-0 z-50 flex items-center justify-between">
             <Link to="/" className="flex items-center space-x-3 group">
               <img src="https://i.ibb.co/svpJKdbx/playsi-logo.png" className="w-8 h-8 group-hover:scale-105 transition-transform" alt="Playzi" />
-              <h1 className="text-2xl font-black tracking-tighter text-white">Playzi</h1>
+              {/* Not an <h1>: each public page has its own heading */}
+              <span className="text-2xl font-black tracking-tighter text-white">Playzi</span>
             </Link>
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="px-4 py-2 bg-vibe-gradient text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform shadow-glow-blue-sm"
             >
               Entrar / Cadastrar
@@ -251,6 +256,9 @@ function AuthenticatedApp() {
                   <Route path="/blog/:slug" element={<BlogPost />} />
                   <Route path="/communities" element={<Communities />} />
                   <Route path="/comunidades/:slug" element={<CommunityLanding />} />
+                  <Route path="/conhecer-pessoas" element={<TopicLanding topic="conhecer-pessoas" />} />
+                  <Route path="/chat-ao-vivo" element={<TopicLanding topic="chat-ao-vivo" />} />
+                  <Route path="/relacionamento" element={<TopicLanding topic="relacionamento" />} />
                   <Route path="/arcade" element={<Arcade />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/terms" element={<TermsOfService />} />
@@ -316,7 +324,6 @@ function AuthenticatedApp() {
       {showNavs && <DesktopSidebar onInboxOpen={() => setIsInboxOpen(true)} />}
       <div className={cn("flex flex-col items-center w-full min-h-screen", showNavs && "lg:pl-64")}>
         {showNavs && <div className="lg:hidden w-full"><Navbar onInboxOpen={() => setIsInboxOpen(true)} /></div>}
-        <NotificationBar />
         <Suspense fallback={null}>
           <QuickInbox isOpen={isInboxOpen} onClose={() => setIsInboxOpen(false)} />
         </Suspense>
@@ -335,8 +342,9 @@ function AuthenticatedApp() {
                location.pathname.startsWith('/blog/'))
             ? "max-w-6xl 2xl:max-w-7xl px-2 sm:px-4 lg:px-8"
             : "max-w-2xl",
-          showNavs ? "pt-[calc(4rem+env(safe-area-inset-top,12px))] pb-[calc(64px+env(safe-area-inset-bottom,16px))] lg:pt-0 lg:pb-0" : "pt-0 pb-0"
+          showNavs ? "pt-[calc(4rem+env(safe-area-inset-top,12px))] pb-[calc(64px+env(safe-area-inset-bottom,16px))] lg:pt-3 lg:pb-8" : "pt-0 pb-0"
         )}>
+          <NotificationBar />
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <Routes location={location}>
@@ -361,6 +369,9 @@ function AuthenticatedApp() {
                 <Route path="/communities" element={<Communities />} />
                 <Route path="/communities/:categoryId" element={<CommunityRoom />} />
                 <Route path="/comunidades/:slug" element={<CommunityLanding />} />
+                <Route path="/conhecer-pessoas" element={<TopicLanding topic="conhecer-pessoas" />} />
+                <Route path="/chat-ao-vivo" element={<TopicLanding topic="chat-ao-vivo" />} />
+                <Route path="/relacionamento" element={<TopicLanding topic="relacionamento" />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />

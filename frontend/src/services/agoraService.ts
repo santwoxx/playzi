@@ -12,7 +12,8 @@ class AgoraService {
   async init() {
     if (this.isInitialized && this.client) return;
     const agoraPkg = await import('agora-rtc-sdk-ng');
-    const AgoraRTC = agoraPkg.default || agoraPkg;
+    // Same fallback as before, typed so tsc accepts it (the module namespace has no createClient)
+    const AgoraRTC = agoraPkg.default ?? (agoraPkg as unknown as typeof agoraPkg.default);
     this.agoraModule = AgoraRTC;
     this.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     this.isInitialized = true;

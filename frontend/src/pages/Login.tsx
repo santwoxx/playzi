@@ -70,7 +70,7 @@ export default function Login() {
               Encontre o seu par ideal no game! 🎮🔥
             </p>
             <p className="text-vibe-muted font-bold text-[8px] uppercase tracking-[0.2em] opacity-60">
-              Junte-se a +10k gamers ativos agora
+              Junte-se aos gamers do Brasil
             </p>
           </div>
 

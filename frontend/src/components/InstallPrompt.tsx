@@ -81,15 +81,20 @@ export default function InstallPrompt() {
   const handleAction = async (action: 'install' | 'continue' | 'ios-guide') => {
     localStorage.setItem('installPromptLastShown', Date.now().toString());
     
-    if (action === 'install' && deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        localStorage.setItem('installPromptDismissed', 'true');
-        // No need to claim here, appinstalled event will fire
+    if (action === 'install') {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          localStorage.setItem('installPromptDismissed', 'true');
+        }
+        setDeferredPrompt(null);
+        setIsVisible(false);
+      } else {
+        // Fallback: abrir página de releases / download do APK
+        window.open('https://github.com/santwoxx/playzi/releases', '_blank');
+        setIsVisible(false);
       }
-      setDeferredPrompt(null);
-      setIsVisible(false);
     } else if (action === 'ios-guide') {
       // Guide is shown in-place
     } else if (action === 'continue') {
@@ -213,15 +218,11 @@ export default function InstallPrompt() {
                   {!isIOS && (
                     <button
                       onClick={() => handleAction('install')}
-                      disabled={!deferredPrompt}
-                      className={cn(
-                        "w-full py-5 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl transition-all relative group/btn",
-                        deferredPrompt ? "bg-vibe-gradient shadow-vibe-neon-blue/20 hover:scale-[1.02] active:scale-95" : "bg-gray-800 opacity-50 cursor-not-allowed"
-                      )}
+                      className="w-full py-5 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl transition-all relative group/btn bg-vibe-gradient shadow-vibe-neon-blue/20 hover:scale-[1.02] active:scale-95"
                     >
                       <div className="flex items-center justify-center space-x-2">
                         <Download className="w-5 h-5 group-hover/btn:animate-bounce" />
-                        <span>Instalar Agora</span>
+                        <span>{deferredPrompt ? "Instalar Agora" : "Instalar App / Baixar APK"}</span>
                       </div>
                       <span className="text-[7px] mt-1 opacity-70 block uppercase tracking-widest">Resgate 1000 Coins Imediatamente</span>
                     </button>

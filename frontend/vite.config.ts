@@ -165,7 +165,8 @@ export default defineConfig(({mode}) => {
       chunkSizeWarningLimit: 800,
       cssCodeSplit: true,
       minify: 'esbuild',
-      target: 'esnext'
+      // Vite's default targets (Chrome 87+, Safari 14+...); 'esnext' shipped syntax older Android WebViews can't parse
+      target: 'modules'
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

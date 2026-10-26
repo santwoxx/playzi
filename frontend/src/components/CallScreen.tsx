@@ -126,7 +126,7 @@ export default function CallScreen({ call, localStream, remoteStream, remoteUser
         <div className="absolute top-10 left-6 flex items-center space-x-3">
            <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/5 flex items-center space-x-2">
               <div className="w-2 h-2 bg-vibe-neon-blue rounded-full animate-pulse shadow-[0_0_10px_rgba(0,242,255,1)]" />
-              <span className="text-[10px] font-black text-white uppercase tracking-widest">Estável (24ms)</span>
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">Ao vivo</span>
            </div>
         </div>
       </div>

@@ -12,10 +12,13 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS and JSON parsing
 app.use(cors());
-// Images for moderation arrive as base64; every other route keeps the default 100kb limit
+// Routes that receive base64 media get a bigger body limit; every other route keeps the default 100kb
 const jsonParser = express.json();
-const imageJsonParser = express.json({ limit: '5mb' });
-app.use((req, res, next) => (req.path === '/api/moderation/image' ? imageJsonParser : jsonParser)(req, res, next));
+const mediaJsonParsers: Record<string, express.RequestHandler> = {
+  '/api/moderation/image': express.json({ limit: '5mb' }),
+  '/api/sendMessage': express.json({ limit: '1mb' })
+};
+app.use((req, res, next) => (mediaJsonParsers[req.path] || jsonParser)(req, res, next));
 
 // Lazy Firebase Admin Initialization Helper
 function ensureFirebaseInitialized() {
@@ -85,6 +88,15 @@ async function verifyToken(req: express.Request, res: express.Response): Promise
   }
 }
 
+// Fixed one-minute window for per-user limits. The old counter only reset after 60s without
+// any action, so someone chatting non-stop was blocked after a handful of messages.
+function minuteWindow(windowStart: Date | undefined, count: number | undefined, now: Date) {
+  if (!windowStart || now.getTime() - windowStart.getTime() >= 60000) {
+    return { start: now, count: 0 };
+  }
+  return { start: windowStart, count: count || 0 };
+}
+
 // Health Check
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -135,15 +147,15 @@ app.post('/api/createChat', async (req, res) => {
     const rateLimitData = rateLimitDoc.data() || {};
 
     const dailyChats = rateLimitData.dailyChats?.[today] || 0;
-    const lastAction = rateLimitData.lastAction?.toDate() || new Date(0);
-    const actionsInLastMinute = (now.getTime() - lastAction.getTime()) < 60000 ? (rateLimitData.actionsInLastMinute || 0) : 0;
+    // Own counter: sending messages no longer eats into the new-chat limit
+    const chatWindow = minuteWindow(rateLimitData.chatWindowStart?.toDate(), rateLimitData.chatCount, now);
 
     if (!isVip) {
       if (dailyChats >= 10) {
         res.status(429).json({ error: 'Daily chat limit reached. Upgrade to VIP for unlimited chats.' });
         return;
       }
-      if (actionsInLastMinute >= 5) {
+      if (chatWindow.count >= 5) {
         res.status(429).json({ error: 'Rate limit exceeded. Please wait a minute.' });
         return;
       }
@@ -179,8 +191,8 @@ app.post('/api/createChat', async (req, res) => {
           ...rateLimitData.dailyChats,
           [today]: dailyChats + 1
         },
-        actionsInLastMinute: actionsInLastMinute + 1,
-        lastAction: now
+        chatWindowStart: chatWindow.start,
+        chatCount: chatWindow.count + 1
       }, { merge: true });
     }
 
@@ -262,9 +274,9 @@ app.post('/api/incrementUsage', async (req, res) => {
     const rateRef = adminDb.collection('rate_limits').doc(userId);
     const rateDoc = await rateRef.get();
     const rateData = rateDoc.data() || {};
-    const lastAction = rateData.lastAction?.toDate() || new Date(0);
-    
-    if (now.getTime() - lastAction.getTime() < 1000) { // 1 sec cooldown
+    const lastUsageAt = rateData.lastUsageAt?.toDate() || new Date(0);
+
+    if (now.getTime() - lastUsageAt.getTime() < 1000) { // 1 sec cooldown
       res.status(429).json({ error: 'Calma lá, gamer! Muitas ações seguidas.' });
       return;
     }
@@ -302,7 +314,7 @@ app.post('/api/incrementUsage', async (req, res) => {
     }, { merge: true });
 
     await rateRef.set({
-      lastAction: now
+      lastUsageAt: now
     }, { merge: true });
 
     res.status(200).json({ success: true, count: dailyUsage + 1 });
@@ -318,7 +330,7 @@ app.post('/api/sendMessage', async (req, res) => {
   if (!userId) return;
 
   const { chatId, content, isEncrypted, mediaUrl, mediaType, expiresAt } = req.body;
-  if (!chatId || !content) {
+  if (typeof chatId !== 'string' || !chatId || typeof content !== 'string' || !content) {
     res.status(400).json({ error: 'Chat ID and content are required' });
     return;
   }
@@ -326,6 +338,17 @@ app.post('/api/sendMessage', async (req, res) => {
   // Data Validation
   if (content.length > 2000) {
     res.status(400).json({ error: 'Mensagem muito longa (máximo 2000 caracteres)' });
+    return;
+  }
+
+  if (mediaUrl != null && (typeof mediaUrl !== 'string' || mediaUrl.length > 1_000_000)) {
+    res.status(400).json({ error: 'Mídia inválida ou muito grande' });
+    return;
+  }
+
+  const expiry = expiresAt ? new Date(expiresAt) : null;
+  if (expiry && Number.isNaN(expiry.getTime())) {
+    res.status(400).json({ error: 'Data de expiração inválida' });
     return;
   }
 
@@ -350,22 +373,21 @@ app.post('/api/sendMessage', async (req, res) => {
     const rateLimitDoc = await rateLimitRef.get();
     const rateLimitData = rateLimitDoc.data() || {};
 
-    const lastAction = rateLimitData.lastAction?.toDate() || new Date(0);
-    const diff = now.getTime() - lastAction.getTime();
-    
-    // Global cooldown: 1 action per 2 seconds min
-    if (diff < 2000) {
+    const lastMessageAt = rateLimitData.lastMessageAt?.toDate() || new Date(0);
+
+    // Cooldown: 1 message per 2 seconds min (own field, so a like right before doesn't block it)
+    if (now.getTime() - lastMessageAt.getTime() < 2000) {
       res.status(429).json({ error: 'Aguarde um momento entre as mensagens.' });
       return;
     }
 
-    const actionsInLastMinute = diff < 60000 ? (rateLimitData.actionsInLastMinute || 0) : 0;
+    const messageWindow = minuteWindow(rateLimitData.messageWindowStart?.toDate(), rateLimitData.messageCount, now);
 
     const userDoc = await adminDb.collection('users').doc(userId).get();
     const userData = userDoc.data();
     const isVip = userData?.isVip || false;
 
-    if (!isVip && actionsInLastMinute >= 15) { 
+    if (!isVip && messageWindow.count >= 15) {
       res.status(429).json({ error: 'Rate limit exceeded. Please wait a minute.' });
       return;
     }
@@ -380,7 +402,7 @@ app.post('/api/sendMessage', async (req, res) => {
       isEncrypted: isEncrypted || false,
       mediaUrl: mediaUrl || null,
       mediaType: mediaType || null,
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
+      expiresAt: expiry,
       createdAt: new Date(),
     };
 
@@ -392,8 +414,9 @@ app.post('/api/sendMessage', async (req, res) => {
 
     // Update rate limit
     await rateLimitRef.set({
-      actionsInLastMinute: actionsInLastMinute + 1,
-      lastAction: now
+      messageWindowStart: messageWindow.start,
+      messageCount: messageWindow.count + 1,
+      lastMessageAt: now
     }, { merge: true });
 
     res.status(200).json({ success: true });

@@ -1,0 +1,46 @@
+{
+  "appId": "com.playzi.app",
+  "appName": "Playzi",
+  "webDir": "dist",
+  "server": {
+    "url": "https://playzi.app.br",
+    "androidScheme": "https",
+    "allowNavigation": [
+      "playzi.app.br",
+      "*.playzi.app.br",
+      "*.firebaseapp.com",
+      "*.googleapis.com",
+      "*.google.com",
+      "*.youtube.com",
+      "*.googlevideo.com",
+      "*.youtube-nocookie.com",
+      "*.ui-avatars.com",
+      "ui-avatars.com",
+      "*.giphy.com",
+      "*.tenor.com",
+      "*.agora.io",
+      "*.sd-rtn.com",
+      "*.unsplash.com",
+      "*.cloudinary.com",
+      "i.ibb.co"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": false,
+      "backgroundColor": "#06070a",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": true,
+      "androidSpinnerStyle": "large",
+      "spinnerColor": "#00f2ff"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  },
+  "android": {
+    "captureInput": true,
+    "backgroundColor": "#06070a"
+  }
+}

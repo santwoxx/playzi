@@ -5,14 +5,27 @@ const config: CapacitorConfig = {
   appName: 'Playzi',
   webDir: 'dist',
   server: {
-    // Produção: o app abre o site publicado.
-    // Para teste local no emulador do Android Studio, troque por http://10.0.2.2:3000 e adicione cleartext: true
+    // Produção: o app abre o site publicado para sincronização em tempo real entre Web, Mobile e APK.
     url: 'https://playzi.app.br',
     androidScheme: 'https',
     allowNavigation: [
+      'playzi.app.br',
+      '*.playzi.app.br',
       '*.firebaseapp.com',
       '*.googleapis.com',
-      '*.google.com'
+      '*.google.com',
+      '*.youtube.com',
+      '*.googlevideo.com',
+      '*.youtube-nocookie.com',
+      '*.ui-avatars.com',
+      'ui-avatars.com',
+      '*.giphy.com',
+      '*.tenor.com',
+      '*.agora.io',
+      '*.sd-rtn.com',
+      '*.unsplash.com',
+      '*.cloudinary.com',
+      'i.ibb.co'
     ]
   },
   plugins: {

@@ -67,7 +67,8 @@ export default function QuickInbox({ isOpen, onClose }: { isOpen: boolean, onClo
                </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+            {/* Masked in Clarity recordings: shows the last message of private chats */}
+            <div data-clarity-mask="True" className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
                {/* Global Chat Shortcut */}
                <button 
                   onClick={() => {

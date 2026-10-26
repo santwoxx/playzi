@@ -40,11 +40,13 @@ const SEO: React.FC<SEOProps> = ({
   breadcrumbs,
   alternateLocales,
 }) => {
-  const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : SITE_URL);
-  const defaultKeywords = 'playzi, playsi, chat de video gamer, chat de video 1v1, grupos de jogos, encontrar amigos, jogar com amigos, comunidade gamer, matchmaking, squad free fire, roblox amigos, tinder gamer, app de relacionamento, bate papo amizade encontro, video chamada gratis, amizades online brasil, aplicativo para conversar, conversar com pessoas, ometv, ome tv, conversar com ia, ia para conversar, chamada de video online, chat video chamada, videochamada, ometv alternativo';
-  const fullTitle = title ? `${title} | Playzi` : 'Playzi - Chat de Video Gamer, Matchmaking e Squad Gratis';
-  const fullDescription = description || 'Conheca pessoas novas na Playzi! O melhor app de socializacao gamer com chat de video 1v1, matchmaking e comunidades ativas. Encontre seu squad agora no Brasil.';
-  const fullKeywords = keywords ? `${keywords}, ${defaultKeywords}` : defaultKeywords;
+  // Canonical without query string or hash, so ?ref=... links don't look like separate pages
+  const currentUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : SITE_URL);
+  const defaultKeywords = 'playzi, chat ao vivo, conhecer pessoas, fazer amizades online, app de relacionamento, comunidade gamer';
+  const fullTitle = title ? `${title} | Playzi` : 'Playzi | Chat ao vivo para conhecer pessoas e fazer amizades';
+  const fullDescription = description || 'Converse ao vivo, conheça pessoas novas e faça amizades que curtem os mesmos jogos e interesses que você. Encontros para maiores de 18. Grátis.';
+  // Page keywords replace the defaults (search engines ignore long keyword lists or treat them as spam)
+  const fullKeywords = keywords || defaultKeywords;
 
   const defaultSchema: any = {
     "@context": "https://schema.org",

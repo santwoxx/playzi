@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDoc, limitToLast } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { AdMonetizationService } from '../lib/monetization';
 import { SafetyService } from '../lib/safetyService';
@@ -51,7 +51,8 @@ export default function CommunityRoom() {
 
   useEffect(() => {
     if (!categoryId) return;
-    const q = query(collection(db, 'communities', categoryId, 'messages'), orderBy('createdAt', 'asc'));
+    // Only the latest messages: busy communities would otherwise download their whole history
+    const q = query(collection(db, 'communities', categoryId, 'messages'), orderBy('createdAt', 'asc'), limitToLast(100));
     const msgsUnsub = onSnapshot(q, (snapshot) => {
       setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

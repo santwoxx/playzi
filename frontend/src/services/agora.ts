@@ -7,7 +7,8 @@ let clientInstance: IAgoraRTCClient | null = null;
 export const getAgoraClient = async (): Promise<IAgoraRTCClient> => {
   if (!clientInstance) {
     const agoraPkg = await import('agora-rtc-sdk-ng');
-    const AgoraRTC = agoraPkg.default || agoraPkg;
+    // Same fallback as before, typed so tsc accepts it (the module namespace has no createClient)
+    const AgoraRTC = agoraPkg.default ?? (agoraPkg as unknown as typeof agoraPkg.default);
     clientInstance = AgoraRTC.createClient({ 
       mode: 'rtc', 
       codec: 'vp8' 
