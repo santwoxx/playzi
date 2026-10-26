@@ -260,7 +260,7 @@ export default function Encontros() {
   if (!hasEnoughPhotos) {
     return (
       <div className="pt-24 pb-20 px-6 min-h-screen bg-vibe-bg gaming-grid flex flex-col items-center justify-center text-center">
-         <SEO title="Encontros - Adicione Fotos ao Perfil" description="Adicione fotos ao seu perfil para comecar a dar match com outros gamers na Playzi." />
+         <SEO title="Encontros - Adicione fotos ao perfil" description="Adicione fotos ao seu perfil para começar a dar match no Encontros do Playzi, exclusivo para maiores de 18." url="https://playzi.app.br/relacionamento" />
          <div className="vibe-card p-8 max-w-sm">
             <div className="w-20 h-20 bg-vibe-neon-blue/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
                <Camera className="w-10 h-10 text-vibe-neon-blue" />
@@ -282,7 +282,8 @@ export default function Encontros() {
 
   return (
     <div className="pt-16 pb-20 px-4 md:pt-20 min-h-[calc(100dvh-64px)] bg-vibe-bg gaming-grid flex flex-col justify-between">
-      <SEO title="Encontros Gamer - Match com Gamers no Brasil" description="Dê match com gamers perto de voce no Playzi Encontros! App de relacionamento para quem ama jogos: Free Fire, Roblox, Minecraft e mais. Encontre seu duo para rankeada ou seu par perfeito. Alternativa ao Tinder para gamers." keywords="encontros gamers, tinder gamer, matchmaking amoroso, app namoro gamer, encontrar duo free fire" url="https://playzi.app.br/encontros" />
+      {/* Members-only page: the public, indexable version is /relacionamento */}
+      <SEO title="Encontros - Relacionamento e match (18+)" description="Dê match com pessoas que curtem os mesmos jogos e interesses que você e converse no privado. Encontros do Playzi: grátis e exclusivo para maiores de 18." keywords="encontros online, app de relacionamento, namoro online, conhecer pessoas, match" url="https://playzi.app.br/relacionamento" />
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3 max-w-md mx-auto w-full px-2 shrink-0">
