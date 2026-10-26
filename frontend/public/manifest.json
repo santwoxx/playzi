@@ -1,7 +1,7 @@
 {
-  "name": "Playzi - Rede Social Gamer: Chat, Matchmaking e Encontros",
+  "name": "Playzi - Chat ao vivo, amizades e games",
   "short_name": "Playzi",
-  "description": "A maior rede social gamer do Brasil. Chat de video 1v1, matchmaking para Free Fire e Roblox, encontros gamers e comunidades de jogos. Conecte-se com milhares de gamers ativos.",
+  "description": "Converse ao vivo, conheça pessoas novas e faça amizades com quem curte os mesmos jogos e interesses. Encontros para maiores de 18.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
