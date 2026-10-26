@@ -159,6 +159,7 @@ const PostCard: React.FC<PostCardProps> = memo(({ post, currentUserId, onLike, o
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
                 loading="lazy"
+                decoding="async"
               />
             </div>
           </div>
@@ -283,6 +284,7 @@ const PostCard: React.FC<PostCardProps> = memo(({ post, currentUserId, onLike, o
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                     loading="lazy"
+                    decoding="async"
                   />
                 </div>
               ))}
@@ -317,6 +319,7 @@ const PostCard: React.FC<PostCardProps> = memo(({ post, currentUserId, onLike, o
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
             loading="lazy"
+            decoding="async"
           />
         ) : post.type === 'video' ? (
           <video 

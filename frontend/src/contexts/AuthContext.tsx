@@ -17,17 +17,33 @@ interface AuthContextType {
   deleteAccount: () => Promise<void>;
 }
 
+const CACHED_USER_KEY = 'playzi_cached_user';
+
+const getCachedUser = (): User | null => {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(CACHED_USER_KEY) : null;
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedUser = getCachedUser();
+  const [currentUser, setCurrentUser] = useState<User | null>(cachedUser);
+  const [loading, setLoading] = useState<boolean>(!cachedUser);
 
   const refreshUser = async () => {
     if (auth.currentUser) {
       const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
       if (userDoc.exists()) {
-        setCurrentUser(userDoc.data() as User);
+        const userData = userDoc.data() as User;
+        setCurrentUser(userData);
+        try {
+          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(userData));
+        } catch {}
       }
     }
   };
@@ -133,11 +149,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
           await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
           setCurrentUser(newUser);
+          try {
+            localStorage.setItem(CACHED_USER_KEY, JSON.stringify(newUser));
+          } catch {}
         } else {
-          await updateDoc(doc(db, 'users', firebaseUser.uid), lastLoginUpdate);
-          setCurrentUser({ ...userDoc.data() as User, ...lastLoginUpdate });
+          // Atualiza em background sem travar o carregamento inicial da página
+          updateDoc(doc(db, 'users', firebaseUser.uid), lastLoginUpdate).catch(console.error);
+          const fullUser = { ...userDoc.data() as User, ...lastLoginUpdate };
+          setCurrentUser(fullUser);
+          try {
+            localStorage.setItem(CACHED_USER_KEY, JSON.stringify(fullUser));
+          } catch {}
         }
       } else {
+        try {
+          localStorage.removeItem(CACHED_USER_KEY);
+        } catch {}
         setCurrentUser(null);
       }
       setLoading(false);
@@ -168,6 +195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    try {
+      localStorage.removeItem(CACHED_USER_KEY);
+    } catch {}
     await signOut(auth);
   };
 

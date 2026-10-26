@@ -4,10 +4,10 @@ import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, u
 import { db } from '../lib/firebase';
 import { Message, User, Chat } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Info, Send, Camera, Smile, ChevronRight, Shield, Lock, EyeOff, Trash2, Clock, Ban, AlertTriangle, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Info, Send, Camera, Smile, ChevronRight, EyeOff, Trash2, Clock, Ban, AlertTriangle, ShieldCheck, User as UserIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { encryptMessage, decryptMessage } from '../lib/encryption';
+import { decryptMessage } from '../lib/encryption';
 import { sendNotification } from '../services/notificationService';
 import { apiService } from '../services/apiService';
 
@@ -77,12 +77,6 @@ const MessageItem = memo(({ msg, isMine, showAvatar, chatData, recipient }: {
               "text-sm leading-relaxed font-semibold dark:font-medium text-slate-950 dark:text-white",
               isMine && "text-white"
             )}>{decodedText}</p>
-            
-            {msg.isEncrypted && (
-              <div className="absolute top-2 right-2 bg-vibe-bg/40 backdrop-blur-md border border-white/10 p-1 rounded-lg text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">
-                <Lock className="w-2.5 h-2.5" />
-              </div>
-            )}
 
             {msg.expiresAt && (
               <div className="flex items-center space-x-1 mt-1 text-[8px] font-black uppercase text-white/30 tracking-wider">
@@ -162,17 +156,13 @@ export default function ChatRoom() {
     const currentInput = msgText;
     setInputText('');
 
-    const isEncrypted = chatData.security?.isEncrypted ?? false;
-    const finalKey = chatData.security?.encryptionKey || 'playzi-default-key'; 
-    const encryptedText = isEncrypted ? encryptMessage(currentInput, finalKey) : currentInput;
-
-    const expiresAt = chatData.security?.autoDelete24h 
-      ? new Date(Date.now() + 24 * 60 * 60 * 1000) 
+    const expiresAt = chatData.security?.autoDelete24h
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
       : null;
 
     try {
-      await apiService.sendMessage(chatId || '', encryptedText, {
-        isEncrypted,
+      await apiService.sendMessage(chatId || '', currentInput, {
+        isEncrypted: false,
         expiresAt: expiresAt?.toISOString()
       });
 
@@ -182,7 +172,7 @@ export default function ChatRoom() {
           userId: recipientId,
           type: 'message',
           title: chatData.security?.isAnonymous ? 'Nova Mensagem Anônima' : (currentUser.nickname || currentUser.displayName || 'Nova Mensagem'),
-          content: isEncrypted ? '🔒 Mensagem Protegida' : currentInput,
+          content: currentInput,
           link: `/chat/${chatId}`,
           senderName: chatData.security?.isAnonymous ? 'Anônimo' : (currentUser.nickname || currentUser.displayName),
           senderPhoto: chatData.security?.isAnonymous ? undefined : currentUser.photoURL
@@ -193,13 +183,6 @@ export default function ChatRoom() {
        console.error("Erro ao enviar mensagem:", error);
     }
   }, [inputText, isUploading, chatId, currentUser, chatData]);
-
-  const toggleEncryption = async () => {
-    if (!chatId || !chatData) return;
-    await updateDoc(doc(db, 'chats', chatId), {
-      'security.isEncrypted': !(chatData.security?.isEncrypted)
-    });
-  };
 
   const toggleEphemeral = async () => {
     if (!chatId || !chatData) return;
@@ -218,19 +201,15 @@ export default function ChatRoom() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
-        
-        const isEncrypted = chatData.security?.isEncrypted ?? false;
-        const finalKey = chatData.security?.encryptionKey || 'playzi-default-key'; 
-        const encryptedUrl = isEncrypted ? encryptMessage(base64String, finalKey) : base64String;
 
-        const expiresAt = chatData.security?.autoDelete24h 
-          ? new Date(Date.now() + 24 * 60 * 60 * 1000) 
+        const expiresAt = chatData.security?.autoDelete24h
+          ? new Date(Date.now() + 24 * 60 * 60 * 1000)
           : null;
 
-        await apiService.sendMessage(chatId, isEncrypted ? '🔒 Mídia Criptografada' : (file.type.startsWith('image') ? '📷 Foto' : '🎥 Vídeo'), {
-          mediaUrl: encryptedUrl,
+        await apiService.sendMessage(chatId, file.type.startsWith('image') ? '📷 Foto' : '🎥 Vídeo', {
+          mediaUrl: base64String,
           mediaType: file.type.startsWith('image') ? 'image' : 'video',
-          isEncrypted,
+          isEncrypted: false,
           expiresAt: expiresAt?.toISOString()
         });
 
@@ -252,7 +231,7 @@ export default function ChatRoom() {
   return (
     <div className="fixed inset-0 bg-vibe-bg z-[60] flex flex-col h-full font-sans overflow-hidden gaming-grid">
       {/* Header */}
-      <div className="h-20 border-b border-white/5 bg-black/40 backdrop-blur-xl flex items-center justify-between px-6 pt-4">
+      <div className="min-h-16 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pb-3 border-b border-white/5 bg-black/40 backdrop-blur-xl flex items-center justify-between px-3 sm:px-6">
         <div className="flex items-center space-x-4">
           <button onClick={() => navigate(-1)} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
             <ArrowLeft className="w-6 h-6 text-white" />
@@ -280,18 +259,13 @@ export default function ChatRoom() {
               </p>
               <div className="flex items-center text-[8px] font-black text-vibe-neon-blue uppercase tracking-widest mt-0.5">
                  <ShieldCheck className="w-2.5 h-2.5 mr-1" />
-                 <span>{chatData?.security?.isAnonymous ? 'Modo Anônimo Ativo' : 'Conversa Protegida'}</span>
+                 <span>{chatData?.security?.isAnonymous ? 'Modo Anônimo Ativo' : 'Conversa privada'}</span>
               </div>
             </div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
-           {chatData?.security?.isEncrypted && (
-             <div className="p-2 bg-vibe-neon-blue/10 rounded-xl text-vibe-neon-blue animate-pulse">
-                <Lock className="w-5 h-5" />
-             </div>
-           )}
-           <button 
+           <button
               onClick={() => setShowPrivacyMenu(true)}
               className="p-2 hover:bg-white/5 rounded-xl transition-colors text-vibe-muted"
            >
@@ -300,21 +274,8 @@ export default function ChatRoom() {
         </div>
       </div>
 
-      {/* Security Banner */}
-      <div className="bg-vibe-neon-blue/5 border-b border-vibe-neon-blue/10 px-6 py-2 flex items-center justify-center space-x-2">
-         <Shield className="w-3 h-3 text-vibe-neon-blue" />
-         <span className="text-[9px] font-black text-vibe-neon-blue uppercase tracking-widest">Criptografia de ponta a ponta ativa</span>
-      </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar pb-10">
-        <div className="flex flex-col items-center justify-center py-10 opacity-30">
-           <Lock className="w-12 h-12 text-vibe-muted mb-4" />
-           <p className="text-[10px] font-black uppercase tracking-widest text-center max-w-[200px]">
-             Suas mensagens e chamadas são protegidas. Ninguém fora desta conversa, nem o Playzi, pode ler.
-           </p>
-        </div>
-
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 no-scrollbar pb-10">
         {messages.map((msg, index) => (
           <MessageItem 
             key={msg.id}
@@ -329,10 +290,10 @@ export default function ChatRoom() {
       </div>
 
       {/* Input */}
-      <div className="p-6 bg-black/40 backdrop-blur-xl border-t border-white/5">
+      <div className="p-3 sm:p-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-black/40 backdrop-blur-xl border-t border-white/5">
         <form 
           onSubmit={handleSend}
-          className="flex items-center space-x-4 bg-white/5 border border-white/10 rounded-3xl py-3 px-5 focus-within:neon-border transition-all"
+          className="flex items-center space-x-2 sm:space-x-4 bg-white/5 border border-white/10 rounded-3xl py-2.5 sm:py-3 px-3 sm:px-5 focus-within:neon-border transition-all"
         >
           <input 
             type="file" 
@@ -356,7 +317,7 @@ export default function ChatRoom() {
             type="text" 
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={isUploading ? "Enviando mídia..." : "Mensagem protegida..."}
+            placeholder={isUploading ? "Enviando mídia..." : "Mensagem..."}
             disabled={isUploading}
             className="flex-1 text-sm bg-transparent border-none focus:outline-none text-white font-medium"
           />
@@ -415,14 +376,6 @@ export default function ChatRoom() {
                    desc="Oculta nomes e fotos nesta conversa" 
                    active={chatData?.security?.isAnonymous ?? false}
                    onClick={() => updateDoc(doc(db, 'chats', chatId!), { 'security.isAnonymous': !chatData?.security?.isAnonymous })}
-                 />
-
-                 <PrivacyToggle 
-                   icon={<Lock className="w-5 h-5 text-vibe-neon-blue" />} 
-                   title="Criptografia Total" 
-                   desc="Ativa E2EE AES-256 nesta conversa" 
-                   active={chatData?.security?.isEncrypted ?? false}
-                   onClick={toggleEncryption}
                  />
 
                    <PrivacyToggle 

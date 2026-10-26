@@ -80,7 +80,7 @@ export default function PlayNow() {
         </div>
 
         {/* Game Showcase & Information */}
-        <div className="vibe-card p-6 bg-black/40 border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="vibe-card p-4 sm:p-6 bg-black/40 border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
           <div className="space-y-2 relative z-10">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-vibe-neon-blue/10 border border-vibe-neon-blue/20 rounded-xl text-vibe-neon-blue">
@@ -98,7 +98,7 @@ export default function PlayNow() {
 
           <div className="flex flex-wrap gap-2 shrink-0 z-10">
             <button 
-              onClick={handleReload}
+              onClick={handleReload} 
               className="px-4 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-white/10 active:scale-95 transition-all flex items-center space-x-2"
               title="Recarregar Jogo"
             >
@@ -107,7 +107,7 @@ export default function PlayNow() {
             </button>
 
             <button 
-              onClick={toggleFullscreen}
+              onClick={toggleFullscreen} 
               className="px-4 py-3 bg-vibe-neon-blue/10 border border-vibe-neon-blue/20 text-vibe-neon-blue rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-vibe-neon-blue/20 active:scale-95 transition-all flex items-center space-x-2"
               title="Tela Cheia"
             >
@@ -127,7 +127,7 @@ export default function PlayNow() {
             "relative w-full overflow-hidden transition-all duration-300",
             isFullscreen 
               ? "fixed inset-0 z-[9999] bg-[#06070a] flex flex-col justify-between" 
-              : "aspect-[16/9] bg-black/80 rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+              : "h-[54vh] min-h-[380px] sm:min-h-0 sm:h-auto sm:aspect-[16/9] bg-black/80 rounded-2xl sm:rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)]"
           )}
         >
           {/* Custom controls bar only shown in fullscreen */}

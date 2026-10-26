@@ -268,13 +268,13 @@ function CommunityCard({ id, name, logo, desc, trending, idx, membersCount, onCl
       className="vibe-card p-6 cursor-pointer group hover:neon-border transition-all relative overflow-hidden"
     >
       <div className="absolute -right-4 -top-4 w-32 h-32 opacity-10 group-hover:scale-125 group-hover:rotate-12 transition-transform select-none">
-        <img src={logo} className="w-full h-full object-contain grayscale invert" referrerPolicy="no-referrer" />
+        <img src={logo} loading="lazy" decoding="async" className="w-full h-full object-contain grayscale invert" referrerPolicy="no-referrer" />
       </div>
       
       <div className="flex items-start justify-between relative z-10">
         <div className="space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-vibe-bg border border-vibe-border p-2 group-hover:neon-border transition-all">
-            <img src={logo} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+            <img src={logo} loading="lazy" decoding="async" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
@@ -297,7 +297,7 @@ function CommunityCard({ id, name, logo, desc, trending, idx, membersCount, onCl
         <div className="flex -space-x-2">
           {[1, 2, 3].map(i => (
             <div key={i} className="w-6 h-6 rounded-full border-2 border-vibe-bg overflow-hidden">
-              <img src={`https://picsum.photos/seed/comm${id}${i}/40/40`} className="w-full h-full object-cover" />
+              <img src={`https://picsum.photos/seed/comm${id}${i}/40/40`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </div>
           ))}
         </div>

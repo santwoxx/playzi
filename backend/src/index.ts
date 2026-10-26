@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import admin from 'firebase-admin';
+import { INSIGHT_KINDS, generateInsight, isAiConfigured, moderateImage, moderateText, toPlayerProfile } from './ai.js';
 
 // Load environment variables
 dotenv.config();
@@ -11,7 +12,10 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS and JSON parsing
 app.use(cors());
-app.use(express.json());
+// Images for moderation arrive as base64; every other route keeps the default 100kb limit
+const jsonParser = express.json();
+const imageJsonParser = express.json({ limit: '5mb' });
+app.use((req, res, next) => (req.path === '/api/moderation/image' ? imageJsonParser : jsonParser)(req, res, next));
 
 // Lazy Firebase Admin Initialization Helper
 function ensureFirebaseInitialized() {
@@ -395,6 +399,108 @@ app.post('/api/sendMessage', async (req, res) => {
     res.status(200).json({ success: true });
   } catch (error) {
     console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Simple in-memory rate limit for the AI routes (protects the Gemini quota)
+const aiRequestLog = new Map<string, number[]>();
+
+function allowAiRequest(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const recent = (aiRequestLog.get(key) || []).filter(time => now - time < windowMs);
+  const allowed = recent.length < maxRequests;
+  if (allowed) recent.push(now);
+  aiRequestLog.set(key, recent);
+  return allowed;
+}
+
+// POST /api/moderation/text
+app.post('/api/moderation/text', async (req, res) => {
+  const userId = await verifyToken(req, res);
+  if (!userId) return;
+
+  const { text } = req.body;
+  if (typeof text !== 'string' || text.length > 5000) {
+    res.status(400).json({ error: 'Texto inválido' });
+    return;
+  }
+
+  if (!allowAiRequest(`moderation:${userId}`, 30, 60000)) {
+    res.status(429).json({ error: 'Muitas verificações seguidas. Aguarde um minuto.' });
+    return;
+  }
+
+  res.status(200).json(await moderateText(text));
+});
+
+// POST /api/moderation/image
+const MODERATION_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+app.post('/api/moderation/image', async (req, res) => {
+  const userId = await verifyToken(req, res);
+  if (!userId) return;
+
+  const { image, mimeType } = req.body;
+  if (typeof image !== 'string' || !image || image.length > 4_000_000 || !MODERATION_IMAGE_TYPES.includes(mimeType)) {
+    res.status(400).json({ error: 'Imagem inválida' });
+    return;
+  }
+
+  if (!allowAiRequest(`moderation:${userId}`, 30, 60000)) {
+    res.status(429).json({ error: 'Muitas verificações seguidas. Aguarde um minuto.' });
+    return;
+  }
+
+  res.status(200).json(await moderateImage(image, mimeType));
+});
+
+// POST /api/ai/insight
+app.post('/api/ai/insight', async (req, res) => {
+  const userId = await verifyToken(req, res);
+  if (!userId) return;
+
+  const { kind, targetUserId, intent } = req.body;
+  if (!INSIGHT_KINDS.includes(kind) || typeof targetUserId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(targetUserId)) {
+    res.status(400).json({ error: 'Pedido inválido' });
+    return;
+  }
+
+  if (!isAiConfigured()) {
+    res.status(503).json({ error: 'IA indisponível' });
+    return;
+  }
+
+  if (!allowAiRequest(`insight:${userId}`, 20, 60000)) {
+    res.status(429).json({ error: 'Muitas solicitações seguidas. Aguarde um minuto.' });
+    return;
+  }
+
+  try {
+    const [meDoc, targetDoc] = await Promise.all([
+      adminDb.collection('users').doc(userId).get(),
+      adminDb.collection('users').doc(targetUserId).get()
+    ]);
+
+    if (!targetDoc.exists) {
+      res.status(404).json({ error: 'Target user not found' });
+      return;
+    }
+
+    const match = toPlayerProfile(targetDoc.data());
+    if (typeof intent === 'string' && intent) {
+      match.currentIntent = intent.slice(0, 30);
+    }
+
+    const text = await generateInsight(kind, toPlayerProfile(meDoc.data()), match);
+    if (!text) {
+      res.status(502).json({ error: 'IA indisponível' });
+      return;
+    }
+
+    res.status(200).json({ text });
+  } catch (error) {
+    console.error('Error generating AI insight:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

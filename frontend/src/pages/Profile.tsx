@@ -1067,6 +1067,7 @@ export default function Profile() {
                         <label className="text-[10px] font-black text-vibe-muted uppercase tracking-widest mb-2 block ml-1">{t('bio')}</label>
                         <textarea 
                           className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-xs font-bold text-white outline-none focus:neon-border transition-all h-32 resize-none"
+                          maxLength={1000}
                           value={editFormData.bio}
                           onChange={(e) => setEditFormData({...editFormData, bio: e.target.value})}
                         />

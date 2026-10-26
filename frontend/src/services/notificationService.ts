@@ -1,5 +1,5 @@
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 
 export type NotificationType = 'like' | 'comment' | 'follow' | 'message' | 'system' | 'match';
 
@@ -13,15 +13,19 @@ export interface CreateNotificationParams {
   senderPhoto?: string;
 }
 
+// Limits mirror the notification rules in firestore.rules
+const truncate = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+
 export const sendNotification = async (params: CreateNotificationParams) => {
   try {
     const notificationsRef = collection(db, 'users', params.userId, 'notifications');
     await addDoc(notificationsRef, {
+      senderId: auth.currentUser?.uid,
       type: params.type,
-      title: params.title,
-      content: params.content,
+      title: truncate(params.title, 100),
+      content: truncate(params.content, 300),
       link: params.link || '',
-      senderName: params.senderName || 'Playzi User',
+      senderName: truncate(params.senderName || 'Playzi User', 100),
       senderPhoto: params.senderPhoto || '',
       read: false,
       createdAt: serverTimestamp()

@@ -65,7 +65,8 @@ export default function MinigameRoom() {
               name: currentUser.nickname || currentUser.displayName || 'Player',
               photoURL: currentUser.photoURL || '',
               score: 0
-            })
+            }),
+            playerIds: arrayUnion(currentUser.uid)
           });
 
           // Check if full (simple logic: 2 players for duels, 4 for quiz)
@@ -80,6 +81,7 @@ export default function MinigameRoom() {
             type: gameId,
             hostId: currentUser.uid,
             status: 'waiting',
+            playerIds: [currentUser.uid],
             players: [{
               id: currentUser.uid,
               name: currentUser.nickname || currentUser.displayName || 'Player',

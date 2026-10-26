@@ -5,15 +5,11 @@ const config: CapacitorConfig = {
   appName: 'Playzi',
   webDir: 'dist',
   server: {
-    // Para teste local no Android Studio (Emulador), use: http://10.0.2.2:3000
-    // Para produção Vercel, use a URL abaixo:
-    url: 'https://ais-pre-4aftfze2dfz2znq53f73ib-580872814941.us-east1.run.app',
-    cleartext: true,
+    // Produção: o app abre o site publicado.
+    // Para teste local no emulador do Android Studio, troque por http://10.0.2.2:3000 e adicione cleartext: true
+    url: 'https://playzi.app.br',
     androidScheme: 'https',
     allowNavigation: [
-      'ais-pre-4aftfze2dfz2znq53f73ib-580872814941.us-east1.run.app',
-      'ais-dev-4aftfze2dfz2znq53f73ib-580872814941.us-east1.run.app',
-      '*.vercel.app',
       '*.firebaseapp.com',
       '*.googleapis.com',
       '*.google.com'
@@ -35,7 +31,6 @@ const config: CapacitorConfig = {
   },
   // Configurações de estabilidade para Android
   android: {
-    allowMixedContent: true,
     captureInput: true,
     backgroundColor: "#06070a"
   }

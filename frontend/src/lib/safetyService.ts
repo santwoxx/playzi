@@ -1,23 +1,31 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { apiService } from '../services/apiService';
 
-// Initialize Gemini lazily to avoid top-level side effects or environment variable issues
-let aiClient: any = null;
-
-const getAI = () => {
-  if (!aiClient) {
-    const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : (import.meta as any).env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("GEMINI_API_KEY is not defined. Content safety features will be disabled.");
-      return null;
-    }
-    aiClient = new GoogleGenAI({ apiKey });
-  }
-  return aiClient;
-};
+// Shrinks the image before upload so the moderation request stays small and cheap
+function downscaleImage(dataUrl: string, maxSize = 768): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(null);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1] || null);
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
 
 /**
- * AI-powered content safety system
- * Blocks NSFW and explicit content using Gemini-3-Flash
+ * AI-powered content safety system.
+ * The check runs on the backend (/api/moderation/*), where the Gemini key lives.
+ * As before, content goes through if the check fails: this is a UX guard, not the final barrier.
  */
 export const SafetyService = {
   /**
@@ -25,39 +33,11 @@ export const SafetyService = {
    * returns true if safe, false if explicit
    */
   async checkTextSafety(text: string): Promise<boolean> {
-    const ai = getAI();
-    if (!ai) return true;
+    if (!text.trim()) return true;
 
     try {
-      if (!text.trim()) return true;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `SYSTEM: You are a strict content moderator for a gaming social network. 
-        Your task is to identify and block any messages that are:
-        1. Sexually explicit or suggestive.
-        2. Extremely vulgar or offensive.
-        3. Harassing or contain hate speech.
-        4. "Muito explícitas" (Extreme explicit content).
-        
-        Analyze this message: "${text}"
-        
-        Respond ONLY in JSON format.`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              isSafe: { type: Type.BOOLEAN, description: "Whether the text is safe to post" },
-              reason: { type: Type.STRING, description: "Short reason if unsafe (e.g., 'conteúdo sexual', 'vulgaridade')" }
-            },
-            required: ["isSafe"]
-          }
-        }
-      });
-
-      const result = JSON.parse(response.text || '{"isSafe": true}');
-      return result.isSafe;
+      const result = await apiService.moderateText(text);
+      return result.isSafe !== false;
     } catch (error) {
       console.error("Safety check error:", error);
       return true;
@@ -68,47 +48,17 @@ export const SafetyService = {
    * Checks if an image is NSFW or explicit
    * returns true if safe, false if explicit
    */
-  async checkImageSafety(base64Image: string, mimeType: string = "image/jpeg"): Promise<boolean> {
-    const ai = getAI();
-    if (!ai) return true;
+  async checkImageSafety(imageDataUrl: string): Promise<boolean> {
+    if (!imageDataUrl.startsWith('data:image/')) return true;
 
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Image.split(',')[1] || base64Image,
-                mimeType: mimeType
-              }
-            },
-            {
-              text: `SYSTEM: You are a strict visual content moderator. 
-              Is this image sexually explicit, pornographic, or contains extreme nudity (+18/muito explícita)? 
-              Analyze carefully for hidden sexual themes or suggestive poses.
-              Respond ONLY in JSON format.`
-            }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              isSafe: { type: Type.BOOLEAN, description: "Whether the image is safe for a general community" },
-              reason: { type: Type.STRING, description: "Short reason if unsafe" }
-            },
-            required: ["isSafe"]
-          }
-        }
-      });
-
-      const result = JSON.parse(response.text || '{"isSafe": true}');
-      return result.isSafe;
+      const image = await downscaleImage(imageDataUrl);
+      if (!image) return true;
+      const result = await apiService.moderateImage(image, 'image/jpeg');
+      return result.isSafe !== false;
     } catch (error) {
       console.error("Image safety check error:", error);
-      return true; 
+      return true;
     }
   }
 };

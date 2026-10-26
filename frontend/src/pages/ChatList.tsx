@@ -12,6 +12,31 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
+// The hidden-chats PIN lives only on this device (a hash in localStorage),
+// never in the user's public Firestore profile.
+const pinStorageKey = (uid: string) => `playzi_hidden_chats_pin_${uid}`;
+
+function readPinHash(uid: string): string | null {
+  try {
+    return localStorage.getItem(pinStorageKey(uid));
+  } catch {
+    return null;
+  }
+}
+
+function savePinHash(uid: string, hash: string) {
+  try {
+    localStorage.setItem(pinStorageKey(uid), hash);
+  } catch {
+    // Storage blocked (e.g. private mode): the PIN only lasts for this visit
+  }
+}
+
+async function hashPin(uid: string, pin: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${uid}:${pin}`));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export default function ChatList() {
   const [chats, setChats] = useState<Chat[]>([]);
   const { currentUser } = useAuth();
@@ -21,6 +46,7 @@ export default function ChatList() {
   const [showHidden, setShowHidden] = useState(false);
   const [pin, setPin] = useState('');
   const [verifying, setVerifying] = useState(false);
+  const [hasPin, setHasPin] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [isWatchingAd, setIsWatchingAd] = useState(false);
   const [limitData, setLimitData] = useState({ current: 0, max: 10 });
@@ -101,13 +127,33 @@ export default function ChatList() {
     return !isHidden && matchesSearch;
   });
 
-  const handleUnlockHidden = () => {
-    if (pin === currentUser?.privacySettings?.hiddenChatsPin || pin === '1234') { // Default 1234 for demo
-      setShowHidden(true);
-      setVerifying(false);
-    } else {
-      alert("PIN Incorreto");
+  const openPinModal = () => {
+    setPin('');
+    setHasPin(currentUser ? readPinHash(currentUser.uid) !== null : false);
+    setVerifying(true);
+  };
+
+  const handleUnlockHidden = async () => {
+    if (!currentUser) return;
+    if (!/^\d{4}$/.test(pin)) {
+      alert("O PIN precisa ter 4 dígitos.");
+      return;
     }
+
+    const hash = await hashPin(currentUser.uid, pin);
+    const storedHash = readPinHash(currentUser.uid);
+    setPin('');
+
+    if (!storedHash) {
+      // First use on this device: the typed PIN becomes the PIN
+      savePinHash(currentUser.uid, hash);
+    } else if (hash !== storedHash) {
+      alert("PIN Incorreto");
+      return;
+    }
+
+    setShowHidden(true);
+    setVerifying(false);
   };
 
   const handleWatchAd = () => {
@@ -134,8 +180,8 @@ export default function ChatList() {
               </div>
            </div>
            {!showHidden && (
-             <button 
-                onClick={() => setVerifying(true)}
+             <button
+                onClick={openPinModal}
                 className="p-3 bg-white/5 border border-white/5 rounded-2xl text-vibe-muted hover:text-vibe-neon-purple hover:neon-border transition-all"
              >
                 <EyeOff className="w-5 h-5" />
@@ -213,21 +259,26 @@ export default function ChatList() {
                  className="vibe-card p-8 max-w-xs w-full border-vibe-neon-purple text-center"
                >
                   <Lock className="w-12 h-12 text-vibe-neon-purple mx-auto mb-6 animate-pulse" />
-                  <h3 className="text-lg font-black text-white uppercase tracking-tighter mb-2">Desbloquear Segredos</h3>
-                  <p className="text-[10px] text-vibe-muted font-bold uppercase tracking-widest mb-6 leading-relaxed">Insira seu PIN de segurança para acessar chats ocultos.</p>
-                  
-                  <input 
+                  <h3 className="text-lg font-black text-white uppercase tracking-tighter mb-2">{hasPin ? 'Desbloquear Segredos' : 'Crie seu PIN'}</h3>
+                  <p className="text-[10px] text-vibe-muted font-bold uppercase tracking-widest mb-6 leading-relaxed">
+                    {hasPin
+                      ? 'Insira seu PIN de segurança para acessar chats ocultos.'
+                      : 'Escolha um PIN de 4 dígitos para os chats ocultos. Ele fica salvo só neste aparelho.'}
+                  </p>
+
+                  <input
                     type="password"
+                    inputMode="numeric"
                     maxLength={4}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-center text-2xl font-black text-vibe-neon-purple focus:neon-border outline-none tracking-[1em]"
                     autoFocus
                     value={pin}
-                    onChange={e => setPin(e.target.value)}
+                    onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
                   />
 
                   <div className="grid grid-cols-2 gap-3 mt-6">
                      <button onClick={() => setVerifying(false)} className="py-3 bg-white/5 rounded-xl text-[10px] font-black uppercase text-vibe-muted">Cancelar</button>
-                     <button onClick={handleUnlockHidden} className="py-3 bg-vibe-gradient rounded-xl text-[10px] font-black uppercase text-white shadow-lg shadow-vibe-neon-blue/20">Acessar</button>
+                     <button onClick={handleUnlockHidden} className="py-3 bg-vibe-gradient rounded-xl text-[10px] font-black uppercase text-white shadow-lg shadow-vibe-neon-blue/20">{hasPin ? 'Acessar' : 'Criar PIN'}</button>
                   </div>
                </motion.div>
             </div>
@@ -329,7 +380,6 @@ function ChatListItem({ chat, currentUser, onClick }: { chat: Chat, currentUser:
                 <h3 className="text-sm font-black text-white uppercase tracking-tighter leading-none">
                   {chat.security?.isAnonymous ? 'Agente Anônimo' : (recipient?.nickname || 'Agente Desconhecido')}
                 </h3>
-                {chat.security?.isEncrypted && <Lock className="w-3 h-3 text-vibe-neon-blue opacity-50" />}
              </div>
              <p className="text-[10px] text-vibe-muted font-bold truncate w-40 mt-1 uppercase tracking-tight">
                {chat.lastMessage || 'Inicie a transmissão...'}

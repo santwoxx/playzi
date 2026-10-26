@@ -27,7 +27,9 @@ const SwipeCard = ({ user, onSwipe, active }: { user: User, onSwipe: (type: 'lik
     }
   };
 
-  const photos = user.photos && user.photos.length > 0 ? user.photos : [user.photoURL || 'https://via.placeholder.com/400x600?text=No+Photo'];
+  const photos = user.photos && user.photos.length > 0 
+    ? user.photos 
+    : [user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname || user.displayName || 'Gamer')}&background=0D0E12&color=fff`];
 
   return (
     <motion.div
@@ -46,6 +48,8 @@ const SwipeCard = ({ user, onSwipe, active }: { user: User, onSwipe: (type: 'lik
           src={photos[currentPhotoIndex]} 
           alt={user.nickname} 
           className="w-full h-full object-cover select-none pointer-events-none" 
+          loading="lazy"
+          decoding="async"
         />
         
         {/* Photo Navigation Overlays */}
@@ -277,33 +281,33 @@ export default function Encontros() {
   }
 
   return (
-    <div className="pt-20 pb-20 px-4 md:pt-24 min-h-screen bg-vibe-bg gaming-grid flex flex-col">
+    <div className="pt-16 pb-20 px-4 md:pt-20 min-h-[calc(100dvh-64px)] bg-vibe-bg gaming-grid flex flex-col justify-between">
       <SEO title="Encontros Gamer - Match com Gamers no Brasil" description="Dê match com gamers perto de voce no Playzi Encontros! App de relacionamento para quem ama jogos: Free Fire, Roblox, Minecraft e mais. Encontre seu duo para rankeada ou seu par perfeito. Alternativa ao Tinder para gamers." keywords="encontros gamers, tinder gamer, matchmaking amoroso, app namoro gamer, encontrar duo free fire" url="https://playzi.app.br/encontros" />
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 max-w-md mx-auto w-full px-2">
+      <div className="flex items-center justify-between mb-3 max-w-md mx-auto w-full px-2 shrink-0">
          <div className="flex items-center space-x-3">
             <div className="p-2 bg-vibe-neon-pink/10 rounded-xl">
-               <Heart className="w-6 h-6 text-vibe-neon-pink animate-pulse" />
+               <Heart className="w-5 h-5 text-vibe-neon-pink animate-pulse" />
             </div>
-            <h1 className="text-2xl font-black text-white italic uppercase tracking-tighter">Encontros</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white italic uppercase tracking-tighter">Encontros</h1>
          </div>
          <div className="flex items-center space-x-2">
-            <button className="p-2 bg-white/5 rounded-xl border border-white/5">
-                <Filter className="w-5 h-5 text-vibe-muted" />
+            <button className="p-2 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                <Filter className="w-4 h-4 text-vibe-muted" />
             </button>
          </div>
       </div>
 
-      {/* Main Swipe Area */}
-      <div className="flex-1 max-w-md mx-auto w-full relative mb-8 min-h-[500px]">
+      {/* Main Swipe Area with dynamic viewport height */}
+      <div className="flex-1 max-w-md mx-auto w-full relative mb-4 flex items-center justify-center">
         {loading ? (
-          <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
+          <div className="w-full h-full flex flex-col items-center justify-center space-y-4 min-h-[350px]">
              <RefreshCw className="w-10 h-10 text-vibe-neon-blue animate-spin" />
              <p className="text-vibe-muted font-bold text-xs uppercase tracking-widest">Buscando players...</p>
           </div>
         ) : potentialMatches.length > currentIndex ? (
-          <div className="relative w-full h-[600px]">
+          <div className="relative w-full h-[calc(100dvh-290px)] min-h-[360px] max-h-[580px]">
             {potentialMatches.slice(currentIndex, currentIndex + 2).reverse().map((user, i) => (
               <SwipeCard 
                 key={user.uid} 
@@ -314,7 +318,7 @@ export default function Encontros() {
             ))}
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center space-y-6 text-center px-8">
+          <div className="w-full h-full flex flex-col items-center justify-center space-y-6 text-center px-8 min-h-[350px]">
              <div className="w-20 h-20 bg-vibe-card rounded-full flex items-center justify-center border border-white/5">
                 <Info className="w-10 h-10 text-vibe-muted" />
              </div>
@@ -324,7 +328,7 @@ export default function Encontros() {
              </div>
              <button 
                onClick={fetchPotentials}
-               className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase text-vibe-text hover:bg-white/10 transition-all"
+               className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase text-vibe-text hover:bg-white/10 transition-all cursor-pointer"
              >
                 Recarregar Busca
              </button>
@@ -332,24 +336,29 @@ export default function Encontros() {
         )}
       </div>
 
-      {/* Control Buttons (Static fallback for tap instead of swipe) */}
-      <div className="max-w-md mx-auto w-full flex items-center justify-center space-x-4 mb-8">
+      {/* Control Buttons (Always visible above bottom nav) */}
+      <div className="max-w-md mx-auto w-full flex items-center justify-center space-x-4 mb-3 shrink-0">
            <button 
              onClick={() => handleSwipe('dislike')}
              disabled={loading || potentialMatches.length <= currentIndex}
-             className="w-16 h-16 bg-black border border-white/10 text-red-500 rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50"
+             className="w-14 h-14 sm:w-16 sm:h-16 bg-black border border-white/10 text-red-500 rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+             title="Passar"
            >
-              <X className="w-8 h-8" />
+              <X className="w-7 h-7 sm:w-8 sm:h-8" />
            </button>
-           <button className="w-12 h-12 bg-black border border-white/10 text-vibe-neon-purple rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all">
-              <Zap className="w-6 h-6 fill-vibe-neon-purple" />
+           <button 
+             className="w-11 h-11 sm:w-12 sm:h-12 bg-black border border-white/10 text-vibe-neon-purple rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
+             title="Super Like"
+           >
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 fill-vibe-neon-purple" />
            </button>
            <button 
              onClick={() => handleSwipe('like')}
              disabled={loading || potentialMatches.length <= currentIndex}
-             className="w-16 h-16 bg-black border border-white/10 text-green-500 rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50"
+             className="w-14 h-14 sm:w-16 sm:h-16 bg-black border border-white/10 text-green-500 rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+             title="Curtir"
            >
-              <Heart className="w-8 h-8 fill-green-500" />
+              <Heart className="w-7 h-7 sm:w-8 sm:h-8 fill-green-500" />
            </button>
       </div>
 

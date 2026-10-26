@@ -171,6 +171,7 @@ export default function Explore() {
                     alt={post.caption}
                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                   />
                   {post.mediaUrls && post.mediaUrls.length > 1 && (

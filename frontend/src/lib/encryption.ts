@@ -1,16 +1,9 @@
 import CryptoJS from 'crypto-js';
 
 /**
- * Encrypts a message using AES with a shared key.
- * In a real E2EE system, this key would be derived from participants' keys.
- */
-export const encryptMessage = (text: string, key: string): string => {
-  if (!key) return text;
-  return CryptoJS.AES.encrypt(text, key).toString();
-};
-
-/**
- * Decrypts a message using AES with a shared key.
+ * Decrypts messages sent while the old "encryption" toggle existed.
+ * That feature used a key stored in the app, so it never was end-to-end encryption;
+ * new messages are sent as plain text and this only keeps old messages readable.
  */
 export const decryptMessage = (cipherText: string, key: string): string => {
   if (!key) return cipherText;
@@ -23,11 +16,4 @@ export const decryptMessage = (cipherText: string, key: string): string => {
     console.error("Decryption error:", e);
     return "🔒 [Mensagem Criptografada]";
   }
-};
-
-/**
- * Generates a random session key for a chat.
- */
-export const generateSessionKey = (): string => {
-  return CryptoJS.lib.WordArray.random(32).toString();
 };

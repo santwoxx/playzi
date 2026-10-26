@@ -1,8 +1,9 @@
-import { useState, lazy, Suspense, memo, useMemo } from 'react';
+import { useState, lazy, Suspense, memo, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import NotificationBar from './components/NotificationBar';
+import { preloadRoute, preloadCriticalRoutes } from './lib/routePreload';
 // Components for lazy loading
 const QuickInbox = lazy(() => import('./components/QuickInbox'));
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -133,6 +134,7 @@ const DesktopSidebar = memo(({ onInboxOpen }: { onInboxOpen: () => void }) => {
             <Link
               key={item.label}
               to={item.path}
+              onMouseEnter={() => preloadRoute(item.path)}
               className={cn(
                 "w-full flex items-center space-x-4 px-4 py-3 rounded-xl transition-all duration-300 group",
                 active ? "bg-white/10 text-white" : "text-vibe-muted hover:bg-white/5 hover:text-white"
@@ -156,6 +158,7 @@ const DesktopSidebar = memo(({ onInboxOpen }: { onInboxOpen: () => void }) => {
                   <Link
                     key={item.label}
                     to={item.path}
+                    onMouseEnter={() => preloadRoute(item.path)}
                     className={cn(
                       "w-full flex items-center space-x-4 px-4 py-3 rounded-xl transition-all duration-300 group hover:bg-white/5",
                       active ? "bg-white/10 text-white" : "text-vibe-muted"
@@ -199,6 +202,10 @@ function AuthenticatedApp() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isInboxOpen, setIsInboxOpen] = useState(false);
+
+  useEffect(() => {
+    preloadCriticalRoutes();
+  }, []);
 
   if (loading) return <PageLoader />;
 
@@ -312,8 +319,19 @@ function AuthenticatedApp() {
         <QuickInbox isOpen={isInboxOpen} onClose={() => setIsInboxOpen(false)} />
         <FloatingGrowthWidgets />
         <main className={cn(
-          "w-full relative", 
-          location.pathname.startsWith('/watch') ? "max-w-none" : "max-w-2xl",
+          "w-full relative transition-all duration-300", 
+          (location.pathname.startsWith('/watch') || location.pathname === '/reels' || location.pathname === '/jogar-agora')
+            ? "max-w-none" 
+            : (location.pathname === '/explore' || 
+               location.pathname === '/communities' || 
+               location.pathname.startsWith('/comunidades/') ||
+               location.pathname === '/arcade' || 
+               location.pathname === '/rankings' || 
+               location.pathname === '/users' ||
+               location.pathname === '/blog' ||
+               location.pathname.startsWith('/blog/'))
+            ? "max-w-6xl 2xl:max-w-7xl px-2 sm:px-4 lg:px-8"
+            : "max-w-2xl",
           showNavs ? "pt-[calc(4rem+env(safe-area-inset-top,12px))] pb-[calc(64px+env(safe-area-inset-bottom,16px))] lg:pt-0 lg:pb-0" : "pt-0 pb-0"
         )}>
           <ErrorBoundary>

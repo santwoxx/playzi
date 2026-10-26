@@ -492,6 +492,7 @@ export default function YoutubeHub() {
                 const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
                 await push(chatRef, {
                   uid: "system",
+                  by: oldestUser.uid,
                   username: "Playzi Bot",
                   avatar: "https://ui-avatars.com/api/?name=PB&background=FF2E93&color=fff",
                   text: `👑 ${oldestUser.displayName || 'Jogador'} é o novo anfitrião da sala!`,
@@ -880,6 +881,7 @@ export default function YoutubeHub() {
       const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
       await push(chatRef, {
         uid: "system",
+        by: currentUser.uid,
         username: "Playzi Bot",
         avatar: "https://ui-avatars.com/api/?name=PB&background=FF2E93&color=fff",
         text: `📺 Alterou o vídeo para: "${title}"`,
@@ -1616,6 +1618,7 @@ export default function YoutubeHub() {
                           const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
                           await push(chatRef, {
                             uid: "system",
+                            by: currentUser.uid,
                             username: "Playzi Bot",
                             avatar: "https://ui-avatars.com/api/?name=PB&background=FF2E93&color=fff",
                             text: `🌐 Navegador Chrome sintonizado em: ${finalUrl}`,

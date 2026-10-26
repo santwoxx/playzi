@@ -2,6 +2,7 @@ import { Home, Search, Heart, Gamepad2, User, PlayCircle } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
+import { preloadRoute } from '../lib/routePreload';
 
 export default function BottomNav() {
   const navigate = useNavigate();
@@ -29,6 +30,8 @@ export default function BottomNav() {
             <Link
               key={item.path}
               to={item.path}
+              onMouseEnter={() => preloadRoute(item.path)}
+              onTouchStart={() => preloadRoute(item.path)}
               className={cn(
                 "relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 tap-effect",
                 active ? "text-white" : "text-vibe-muted hover:text-white"

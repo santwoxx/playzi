@@ -3,15 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ========================
-    // 🔐 HELPERS (The Fortress Core)
+    // 🔐 HELPERS
     // ========================
-    
+
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
     }
 
     function isOwner(userId) {
@@ -30,6 +26,41 @@ service cloud.firestore {
       return resource.data;
     }
 
+    // Campos alterados por um update
+    function changes() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // A lista só ganhou ou perdeu o uid de quem está escrevendo (curtir, entrar/sair)
+    function onlySelfToggled(field) {
+      let before = existing()[field].toSet();
+      let after = incoming()[field].toSet();
+      return incoming()[field] is list
+        && after.difference(before).union(before.difference(after)).hasOnly([request.auth.uid]);
+    }
+
+    // A lista só ganhou o uid de quem está escrevendo, sem perder ninguém
+    function onlySelfAdded(field) {
+      let before = existing()[field].toSet();
+      let after = incoming()[field].toSet();
+      return incoming()[field] is list
+        && after.difference(before).hasOnly([request.auth.uid])
+        && before.difference(after).size() == 0;
+    }
+
+    // Validações aplicadas só quando o campo muda, para não travar documentos antigos
+    function stringField(field, maxSize) {
+      return !(field in changes()) || (incoming()[field] is string && incoming()[field].size() <= maxSize);
+    }
+
+    function listField(field, maxSize) {
+      return !(field in changes()) || (incoming()[field] is list && incoming()[field].size() <= maxSize);
+    }
+
+    function counterField(field) {
+      return !(field in changes()) || (incoming()[field] is number && incoming()[field] >= 0);
+    }
+
     // ========================
     // 👤 VALIDATION HELPERS
     // ========================
@@ -38,16 +69,68 @@ service cloud.firestore {
       return data.keys().hasAll(['nickname', 'onboarded']) &&
              data.nickname is string && data.nickname.size() >= 1 && data.nickname.size() <= 32 &&
              data.onboarded is bool &&
-             (!('role' in data)) &&
-             (!('plan' in data)) &&
-             (!('permissions' in data)) &&
-             (!('isVip' in data)) &&
-             (!('vipExpiresAt' in data)) &&
+             (!('uid' in data) || data.uid == request.auth.uid) &&
+             (!('email' in data) || data.email == request.auth.token.get('email', null)) &&
+             !data.keys().hasAny(['role', 'plan', 'permissions', 'isVip', 'vipExpiresAt', 'banned', 'followers', 'following', 'reputation', 'referralCount']) &&
              (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
              (!('country' in data) || (data.country is string && data.country.size() <= 100)) &&
              (!('currentIntent' in data) || (data.currentIntent in ['playing', 'chatting', 'competitive', 'friendship'])) &&
              (!('frequency' in data) || (data.frequency in ['daily', 'weekends', 'casual'])) &&
              (!('behavior' in data) || (data.behavior in ['chill', 'tryhard', 'leader', 'funny']));
+    }
+
+    // Campos que o dono pode alterar no próprio perfil.
+    // Ficam de fora: followers/following (só o backend), reputation, email e
+    // qualquer campo de VIP/permissão.
+    function allowedProfileKeys() {
+      return [
+        'nickname', 'displayName', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'age', 'gender',
+        'photoURL', 'photos', 'location', 'region', 'interestedIn', 'relationshipStatus', 'onboarded', 'language',
+        'mood', 'favoriteMusic', 'currentGame', 'statusMessage', 'playStyle', 'currentIntent', 'frequency', 'behavior',
+        'links', 'privacySettings', 'privacyAgeHidden', 'blocks', 'status', 'lastLoginAt', 'updatedAt',
+        'fcmToken', 'fcmTokens', 'notificationsEnabled',
+        'referralCode', 'referredBy', 'referralCount', 'contactedUids', 'chatSlots',
+        // TODO: gamificação ainda é calculada no cliente; mover para o backend e tirar daqui
+        'xp', 'level', 'rankTitle', 'coins', 'gems', 'streak', 'lastRewardDate', 'rewards', 'medals', 'achievements'
+      ];
+    }
+
+    function hasValidProfileChanges() {
+      return stringField('nickname', 32) &&
+             (!('nickname' in changes()) || incoming().nickname.size() >= 1) &&
+             stringField('displayName', 64) &&
+             stringField('bio', 1000) &&
+             stringField('statusMessage', 200) &&
+             stringField('mood', 200) &&
+             stringField('favoriteMusic', 200) &&
+             stringField('currentGame', 200) &&
+             stringField('country', 200) &&
+             stringField('photoURL', 2048) &&
+             listField('photos', 10) &&
+             listField('links', 20) &&
+             listField('favoriteGames', 50) &&
+             listField('interests', 50) &&
+             listField('blocks', 1000) &&
+             listField('contactedUids', 1000) &&
+             counterField('xp') &&
+             counterField('level') &&
+             counterField('coins') &&
+             counterField('gems');
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasOnly(['senderId', 'type', 'title', 'content', 'link', 'senderName', 'senderPhoto', 'read', 'createdAt']) &&
+             data.senderId == request.auth.uid &&
+             data.type in ['like', 'comment', 'follow', 'message', 'match'] &&
+             data.title is string && data.title.size() <= 100 &&
+             data.content is string && data.content.size() <= 500 &&
+             // Só links internos do app (bloqueia phishing com URL externa)
+             data.link is string && data.link.size() <= 300 &&
+             (data.link == '' || data.link.matches('^/([A-Za-z0-9_-][A-Za-z0-9_/?=&%.-]*)?$')) &&
+             data.senderName is string && data.senderName.size() <= 100 &&
+             data.senderPhoto is string && data.senderPhoto.size() <= 2048 &&
+             data.read == false &&
+             data.createdAt == request.time;
     }
 
     function isValidPost(data) {
@@ -56,18 +139,36 @@ service cloud.firestore {
              data.caption is string && data.caption.size() <= 5000 &&
              data.type in ['text', 'image', 'video'] &&
              data.createdAt == request.time &&
-             data.likes is list &&
-             data.commentCount is number;
+             data.likes is list && data.likes.size() == 0 &&
+             data.commentCount == 0;
     }
 
     function isValidCall(data) {
       return data.keys().hasAll(['callerId', 'receiverId', 'participants', 'status', 'type', 'createdAt']) &&
              data.callerId == request.auth.uid &&
+             data.receiverId != request.auth.uid &&
              data.participants is list && data.participants.size() == 2 &&
              request.auth.uid in data.participants &&
+             data.receiverId in data.participants &&
              data.status == 'calling' &&
              data.type in ['voice', 'video'] &&
              data.createdAt == request.time;
+    }
+
+    // Match só existe se os dois swipes (ida e volta) forem "like"
+    function isMutualLike(otherUid) {
+      return exists(/databases/$(database)/documents/swipes/$(request.auth.uid + '_' + otherUid)) &&
+             exists(/databases/$(database)/documents/swipes/$(otherUid + '_' + request.auth.uid)) &&
+             get(/databases/$(database)/documents/swipes/$(request.auth.uid + '_' + otherUid)).data.type == 'like' &&
+             get(/databases/$(database)/documents/swipes/$(otherUid + '_' + request.auth.uid)).data.type == 'like';
+    }
+
+    function isValidMatch(data, matchId) {
+      return data.userIds is list && data.userIds.size() == 2 &&
+             data.createdAt == request.time &&
+             (matchId == data.userIds[0] + '_' + data.userIds[1] || matchId == data.userIds[1] + '_' + data.userIds[0]) &&
+             ((data.userIds[0] == request.auth.uid && isMutualLike(data.userIds[1])) ||
+              (data.userIds[1] == request.auth.uid && isMutualLike(data.userIds[0])));
     }
 
     // ========================
@@ -81,24 +182,22 @@ service cloud.firestore {
 
     // Users
     match /users/{userId} {
+      // TODO: o documento ainda guarda e-mail, nascimento e localização; separar os dados privados
       allow get: if isSignedIn();
-      allow list: if isSignedIn(); 
-      
+      allow list: if isSignedIn();
+
       allow create: if isOwner(userId) && isValidUser(incoming());
-      
-      allow update: if isOwner(userId) && (
-        incoming().diff(existing()).affectedKeys().hasOnly([
-          'nickname', 'bio', 'country', 'favoriteGames', 'interests', 'birthday', 'gender', 'photoURL', 'photos', 'location', 'interestedIn', 'onboarded', 'mood', 'favoriteMusic', 'currentGame', 'statusMessage', 'playStyle', 'rewards', 'privacySettings', 'friends', 'followers', 'following', 'blocks', 'contactedUids', 'chatSlots', 'currentIntent', 'frequency', 'behavior', 'age', 'displayName', 'language', 'referralCode', 'referredBy', 'referralCount', 'links', 'status', 'fcmToken', 'fcmTokens', 'updatedAt',
-          'xp', 'level', 'coins', 'gems', 'rankTitle', 'lastLoginAt', 'streak', 'victories', 'tickets', 'lastRewardDate', 'medals', 'achievements', 'reputation', 'relationshipStatus', 'email', 'username', 'region', 'privacyAgeHidden', 'badges', 'profileFrame', 'profileTheme', 'swipesCount', 'referralRewardsClaimed'
-        ])
-      );
+
+      allow update: if isOwner(userId) &&
+                     changes().hasOnly(allowedProfileKeys()) &&
+                     hasValidProfileChanges();
 
       allow delete: if isOwner(userId);
 
       match /notifications/{notificationId} {
         allow read: if isOwner(userId);
-        allow create: if isSignedIn();
-        allow update: if isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+        allow create: if isSignedIn() && isValidNotification(incoming());
+        allow update: if isOwner(userId) && changes().hasOnly(['read']);
         allow delete: if isOwner(userId);
       }
     }
@@ -108,15 +207,21 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isValidPost(incoming());
       allow update: if isSignedIn() && (
-        (isOwner(existing().userId) && incoming().userId == existing().userId && incoming().diff(existing()).affectedKeys().hasOnly(['caption', 'mediaUrl', 'backgroundColor'])) || 
-        (incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'commentCount']))
+        (isOwner(existing().userId) &&
+         changes().hasOnly(['caption', 'mediaUrl', 'backgroundColor']) &&
+         incoming().caption is string && incoming().caption.size() <= 5000) ||
+        (changes().hasOnly(['likes']) && onlySelfToggled('likes')) ||
+        (changes().hasOnly(['commentCount']) &&
+         incoming().commentCount is int &&
+         (incoming().commentCount == existing().commentCount + 1 || incoming().commentCount == existing().commentCount - 1))
       );
       allow delete: if isOwner(existing().userId);
 
       match /comments/{commentId} {
         allow read: if isSignedIn();
-        allow create: if isSignedIn() && incoming().userId == request.auth.uid && 
-                       incoming().text is string && incoming().text.size() <= 1000;
+        allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
+                       incoming().text is string && incoming().text.size() >= 1 && incoming().text.size() <= 1000 &&
+                       incoming().createdAt == request.time;
         allow delete: if isOwner(existing().userId) || isOwner(get(/databases/$(database)/documents/posts/$(postId)).data.userId);
       }
     }
@@ -124,17 +229,16 @@ service cloud.firestore {
     // Chats
     match /chats/{chatId} {
       allow read: if isSignedIn() && (request.auth.uid in existing().participants);
-      allow create: if isSignedIn() && (request.auth.uid in incoming().participants) && incoming().participants.size() <= 10;
+      // Criação só pelo backend (/api/createChat), que aplica os limites diários
+      allow create: if false;
       allow update: if isSignedIn() && (request.auth.uid in existing().participants) &&
-                     incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'updatedAt', 'mutedBy', 'security']);
+                     changes().hasOnly(['mutedBy', 'security']);
       allow delete: if isSignedIn() && (request.auth.uid in existing().participants);
 
       match /messages/{messageId} {
         allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
-        allow create: if isSignedIn() &&
-                       (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants) &&
-                       incoming().senderId == request.auth.uid &&
-                       incoming().text is string && incoming().text.size() <= 2000;
+        // Envio só pelo backend (/api/sendMessage), que aplica o rate limit
+        allow create, update: if false;
         allow delete: if isSignedIn() && isOwner(existing().senderId);
       }
     }
@@ -154,38 +258,48 @@ service cloud.firestore {
     match /globalMessages/{msgId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
-                     incoming().text is string && incoming().text.size() <= 1000;
+                     incoming().text is string && incoming().text.size() >= 1 && incoming().text.size() <= 1000 &&
+                     incoming().createdAt == request.time;
     }
 
     // Matchmaking
     match /matchmaking/{requestId} {
-      allow read, create, update, delete: if isSignedIn();
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && incoming().status == 'searching';
+      allow update: if isSignedIn() && (
+        // Dono atualiza o próprio pedido
+        (isOwner(existing().userId) && incoming().userId == existing().userId) ||
+        // Outro jogador aceita um pedido em busca, em nome de si mesmo
+        (existing().status == 'searching' &&
+         existing().userId != request.auth.uid &&
+         incoming().status == 'matched' &&
+         incoming().matchId == request.auth.uid &&
+         changes().hasOnly(['status', 'matchId', 'matchName', 'matchPhoto', 'matchIntent', 'chatId']))
+      );
+      allow delete: if isOwner(existing().userId);
     }
 
     // Game Sessions
     match /gameSessions/{sessionId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn() && existing().hostId == request.auth.uid;
-    }
-
-    // Lives
-    match /lives/{liveId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+                     incoming().hostId == request.auth.uid &&
+                     incoming().playerIds == [request.auth.uid] &&
+                     incoming().status == 'waiting';
       allow update: if isSignedIn() && (
-        isOwner(existing().userId) ||
-        incoming().diff(existing()).affectedKeys().hasOnly(['viewerCount', 'status', 'lastHeartbeat'])
+        // Sessões criadas antes do campo playerIds
+        !('playerIds' in existing()) ||
+        // Jogadores atualizam o jogo, mas não trocam host, tipo ou lista de jogadores
+        (request.auth.uid in existing().playerIds &&
+         !changes().hasAny(['hostId', 'type', 'playerIds', 'createdAt'])) ||
+        // Entrar numa sessão que está esperando jogadores
+        (existing().status == 'waiting' &&
+         !(request.auth.uid in existing().playerIds) &&
+         changes().hasOnly(['players', 'playerIds']) &&
+         onlySelfAdded('playerIds') &&
+         incoming().players.size() == existing().players.size() + 1)
       );
-      allow delete: if isSignedIn() && isOwner(existing().userId);
-
-      match /messages/{messageId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
-                       incoming().text is string && incoming().text.size() <= 1000;
-        allow delete: if isSignedIn() && isOwner(existing().userId);
-      }
+      allow delete: if isSignedIn() && existing().hostId == request.auth.uid;
     }
 
     // Calls
@@ -200,23 +314,23 @@ service cloud.firestore {
                      (
                        // Action during 'calling' phase
                        (existing().status == 'calling' && (
-                         // Action: Answer
-                         (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'answer']) && incoming().status == 'accepted') ||
+                         // Action: Answer (só quem recebe)
+                         (changes().hasOnly(['status', 'answer']) && incoming().status == 'accepted' && existing().receiverId == request.auth.uid) ||
                          // Action: Reject/End
-                         (incoming().diff(existing()).affectedKeys().hasOnly(['status']) && incoming().status in ['rejected', 'ended']) ||
+                         (changes().hasOnly(['status']) && incoming().status in ['rejected', 'ended']) ||
                          // Action: Set Offer
-                         (incoming().diff(existing()).affectedKeys().hasOnly(['offer']) && !('offer' in existing()))
+                         (changes().hasOnly(['offer']) && !('offer' in existing()))
                        )) ||
                        // Action during 'accepted' phase
                        (existing().status == 'accepted' && (
                          // Action: End Call
-                         incoming().diff(existing()).affectedKeys().hasOnly(['status']) && incoming().status == 'ended'
+                         changes().hasOnly(['status']) && incoming().status == 'ended'
                        ))
                      );
       allow delete: if isSignedIn() && (request.auth.uid in existing().participants);
 
       match /candidates/{candidateId} {
-        allow read, write: if isSignedIn() && 
+        allow read, write: if isSignedIn() &&
                              (request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participants);
       }
     }
@@ -234,56 +348,79 @@ service cloud.firestore {
       }
 
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && 
+      allow create: if isSignedIn() &&
                     ratingId == (request.auth.uid + '_' + incoming().targetId) &&
                     isValidRating(incoming());
       allow update, delete: if false; // Ratings are immutable
     }
 
-    // Swipes
+    // Swipes (cada um só vê os swipes que fez ou recebeu)
     match /swipes/{swipeId} {
       allow read: if isSignedIn() && (existing().fromUserId == request.auth.uid || existing().toUserId == request.auth.uid);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && incoming().fromUserId == request.auth.uid &&
-                    incoming().createdAt == request.time &&
-                    incoming().type in ['like', 'dislike'];
+      allow create: if isSignedIn() &&
+                    swipeId == request.auth.uid + '_' + incoming().toUserId &&
+                    incoming().fromUserId == request.auth.uid &&
+                    incoming().toUserId != request.auth.uid &&
+                    incoming().type in ['like', 'dislike'] &&
+                    incoming().createdAt == request.time;
     }
 
     // Matches
     match /matches/{matchId} {
       allow read: if isSignedIn() && (request.auth.uid in existing().userIds);
-      allow list: if isSignedIn() && (request.auth.uid in resource.data.userIds);
-      allow create: if isSignedIn() && (request.auth.uid in incoming().userIds) &&
-                    incoming().createdAt == request.time;
+      allow create: if isSignedIn() && isValidMatch(incoming(), matchId);
       allow update: if isSignedIn() && (request.auth.uid in existing().userIds) &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['chatCreated', 'chatId']);
+                    changes().hasOnly(['chatCreated', 'chatId']);
     }
 
     // Communities
     match /communities/{communityId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
+      allow create: if isSignedIn() &&
+                    incoming().ownerId == request.auth.uid &&
+                    incoming().members == [request.auth.uid] &&
+                    incoming().name is string && incoming().name.size() >= 1 && incoming().name.size() <= 80 &&
+                    (!('description' in incoming()) || (incoming().description is string && incoming().description.size() <= 2000));
+      allow update: if isSignedIn() && (
+        // Dono edita a comunidade, mas não transfere a posse
+        (isOwner(existing().ownerId) && !changes().hasAny(['ownerId'])) ||
+        // Qualquer um entra ou sai, mexendo só no próprio uid
+        (changes().hasOnly(['members']) && onlySelfToggled('members'))
+      );
+      allow delete: if isSignedIn() && isOwner(existing().ownerId);
 
       match /messages/{messageId} {
         allow read: if isSignedIn();
         allow create: if isSignedIn() && incoming().userId == request.auth.uid &&
-                       incoming().text is string && incoming().text.size() <= 1000;
-        allow delete: if isSignedIn();
+                       incoming().text is string && incoming().text.size() >= 1 && incoming().text.size() <= 1000 &&
+                       incoming().createdAt == request.time;
+        allow delete: if isSignedIn() && (
+          existing().userId == request.auth.uid ||
+          get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid
+        );
       }
     }
 
     // Stories
     match /stories/{storyId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && incoming().viewers == [];
+      // Registrar visualização: só adiciona o próprio uid em viewers
+      allow update: if isSignedIn() && changes().hasOnly(['viewers']) && onlySelfAdded('viewers');
       allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
     // Reports
     match /reports/{reportId} {
-      allow create: if isSignedIn();
-      allow read: if false; // Admin-only on Firebase Console
+      allow create: if isSignedIn() &&
+                    incoming().reporterId == request.auth.uid &&
+                    incoming().targetType in ['user', 'post', 'comment'] &&
+                    incoming().targetId is string && incoming().targetId.size() <= 128 &&
+                    incoming().reason is string && incoming().reason.size() <= 200 &&
+                    (!('details' in incoming()) || (incoming().details is string && incoming().details.size() <= 2000)) &&
+                    incoming().status == 'pending' &&
+                    incoming().createdAt == request.time;
+      allow read, update, delete: if false; // Admin-only on Firebase Console
     }
   }
 }

@@ -285,6 +285,7 @@ export default function WatchParty() {
         const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
         push(chatRef, {
           uid: 'system',
+          by: currentUser.uid,
           username: 'Playzi Bot',
           avatar: userAvatar || `https://ui-avatars.com/api/?name=${userNick || 'Jogador'}&background=FF2E93&color=fff`,
           text: `${userNick} entrou`,
@@ -352,6 +353,7 @@ export default function WatchParty() {
                 const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
                 await push(chatRef, {
                   uid: "system",
+                  by: oldestUser.uid,
                   username: "Playzi Bot",
                   avatar: "https://ui-avatars.com/api/?name=PB&background=FF2E93&color=fff",
                   text: `👑 ${oldestUser.displayName || 'Jogador'} é o novo anfitrião da sala!`,
@@ -757,6 +759,7 @@ export default function WatchParty() {
       // Post bot welcome message
       await set(ref(rtdb, `rooms/${newRoomId}/chat/${Math.random().toString(36).substring(2, 9)}`), {
         uid: "system",
+        by: currentUser.uid,
         username: "Playzi Bot",
         avatar: "https://ui-avatars.com/api/?name=PB&background=FF2E93&color=fff",
         text: `📺 Sala de Vídeo do YouTube criada por ${userNick}! Use a barra de pesquisas na esquerda para começar outros vídeos.`,
@@ -804,6 +807,7 @@ export default function WatchParty() {
       // Post bot welcome message
       await set(ref(rtdb, `rooms/${newRoomId}/chat/${Math.random().toString(36).substring(2, 9)}`), {
         uid: "system",
+        by: currentUser.uid,
         username: "Playzi Bot",
         avatar: "https://ui-avatars.com/api/?name=PB&background=FF2E93&color=fff",
         text: `🌐 Navegador Global Chrome iniciado por ${userNick}! Use o controle navegador abaixo para surfarem juntos na Web.`,

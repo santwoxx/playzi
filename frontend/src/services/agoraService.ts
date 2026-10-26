@@ -1,4 +1,4 @@
-import AgoraRTC, { IAgoraRTCClient, IMicrophoneAudioTrack, ICameraVideoTrack, ILocalTrack } from 'agora-rtc-sdk-ng';
+import type { IAgoraRTCClient, IMicrophoneAudioTrack, ICameraVideoTrack, ILocalTrack } from 'agora-rtc-sdk-ng';
 
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID || ''; 
 
@@ -7,9 +7,13 @@ class AgoraService {
   private localAudioTrack: IMicrophoneAudioTrack | null = null;
   private localVideoTrack: ICameraVideoTrack | null = null;
   private isInitialized = false;
+  private agoraModule: any = null;
 
   async init() {
-    if (this.isInitialized) return;
+    if (this.isInitialized && this.client) return;
+    const agoraPkg = await import('agora-rtc-sdk-ng');
+    const AgoraRTC = agoraPkg.default || agoraPkg;
+    this.agoraModule = AgoraRTC;
     this.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     this.isInitialized = true;
   }
@@ -25,6 +29,7 @@ class AgoraService {
       await this.client!.join(APP_ID, channel, token, uid);
       
       const tracks: ILocalTrack[] = [];
+      const AgoraRTC = this.agoraModule;
       
       this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       tracks.push(this.localAudioTrack);

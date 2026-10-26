@@ -98,7 +98,7 @@ export default function CallScreen({ call, localStream, remoteStream, remoteUser
                  {call.callerId === currentUser?.uid ? 'Chamando...' : 'Em Chamada'}
                </p>
                <p className="text-vibe-muted font-bold text-[10px] uppercase tracking-[0.4em]">
-                 {isVideoCall ? 'WebRTC HD Video' : 'Criptografia de Ponta a Ponta'}
+                 {isVideoCall ? 'Chamada de vídeo' : 'Chamada de voz'}
                </p>
             </div>
           </div>

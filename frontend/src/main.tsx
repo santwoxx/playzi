@@ -31,3 +31,8 @@ createRoot(document.getElementById('root')!).render(
     </HelmetProvider>
   </StrictMode>,
 );
+
+// Dispensar loader inicial HTML assim que a aplicação React renderizar
+if (typeof (window as any).__dismissInitialLoader === 'function') {
+  (window as any).__dismissInitialLoader();
+}

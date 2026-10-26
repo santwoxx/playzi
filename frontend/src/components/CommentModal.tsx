@@ -215,7 +215,7 @@ export default function CommentModal({ postId, postOwnerId, postCaption, isOpen,
               )}
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-vibe-card border-t border-vibe-border pb-safe transition-all shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] bg-vibe-card border-t border-vibe-border transition-all shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
               <AnimatePresence>
                 {replyTo && (
                   <motion.div 

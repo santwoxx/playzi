@@ -45,90 +45,95 @@ const ReelItem = ({ post, isActive }: any) => {
   };
 
   return (
-    <div className="relative h-screen w-full bg-black snap-start shrink-0 flex items-center justify-center overflow-hidden">
-      {/* Video Content */}
-      <video
-        ref={videoRef}
-        src={post.mediaUrl}
-        loop
-        muted={isMuted}
-        playsInline
-        className="h-full w-full object-cover"
-        onClick={() => videoRef.current?.paused ? videoRef.current.play() : videoRef.current?.pause()}
-      />
+    <div className="relative h-screen w-full bg-black/95 snap-start shrink-0 flex items-center justify-center overflow-hidden">
+      {/* Container - Fullscreen on mobile, centered 9:16 mobile canvas on desktop */}
+      <div className="relative w-full h-full md:max-w-[430px] md:h-[calc(100vh-24px)] md:rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center bg-black border-0 md:border md:border-white/10">
+        {/* Video Content */}
+        <video
+          ref={videoRef}
+          src={post.mediaUrl}
+          loop
+          muted={isMuted}
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+          onClick={() => videoRef.current?.paused ? videoRef.current.play() : videoRef.current?.pause()}
+        />
 
-      {/* Overlay - Bottom Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+        {/* Overlay - Bottom Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
 
-      {/* Interactions Side Bar */}
-      <div className="absolute right-4 bottom-24 flex flex-col items-center space-y-6 z-10">
-        <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(`/profile/${post.userId}`)}>
-          <div className="w-11 h-11 rounded-full border-2 border-white overflow-hidden mb-1">
-            <img src={post.userPhotoURL} alt={post.userDisplayName} className="w-full h-full object-cover" />
+        {/* Interactions Side Bar */}
+        <div className="absolute right-3 sm:right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom,16px))] flex flex-col items-center space-y-5 z-20">
+          <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(`/profile/${post.userId}`)}>
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-white overflow-hidden mb-1">
+              <img src={post.userPhotoURL} alt={post.userDisplayName} className="w-full h-full object-cover" />
+            </div>
+            <div className="absolute -bottom-1 w-5 h-5 bg-vibe-neon-blue rounded-full flex items-center justify-center border-2 border-black">
+              <span className="text-white text-[10px] font-bold">+</span>
+            </div>
           </div>
-          <div className="absolute -bottom-1 w-5 h-5 bg-vibe-neon-blue rounded-full flex items-center justify-center border-2 border-black">
-            <span className="text-white text-[10px] font-bold">+</span>
+
+          <button onClick={handleLike} className="flex flex-col items-center">
+            <Heart className={cn("w-7 h-7 sm:w-8 sm:h-8 drop-shadow-lg transition-transform active:scale-125", isLiked ? "text-red-500 fill-red-500" : "text-white")} />
+            <span className="text-[11px] sm:text-[12px] font-bold text-white mt-0.5 shadow-sm">{post.likes.length}</span>
+          </button>
+
+          <button className="flex flex-col items-center">
+            <MessageCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow-lg" />
+            <span className="text-[11px] sm:text-[12px] font-bold text-white mt-0.5 shadow-sm">{post.commentCount}</span>
+          </button>
+
+          <button className="flex flex-col items-center">
+            <Send className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-lg" />
+          </button>
+
+          <button className="flex flex-col items-center">
+            <Bookmark className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-lg" />
+          </button>
+
+          <button className="flex flex-col items-center">
+            <MoreVertical className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
+          </button>
+
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-800 border-2 border-gray-600 animate-spin-slow p-2 overflow-hidden flex items-center justify-center">
+            <Disc className="w-full h-full text-gray-500" />
           </div>
         </div>
 
-        <button onClick={handleLike} className="flex flex-col items-center">
-          <Heart className={cn("w-8 h-8 drop-shadow-lg transition-transform active:scale-125", isLiked ? "text-red-500 fill-red-500" : "text-white")} />
-          <span className="text-[12px] font-bold text-white mt-1 shadow-sm">{post.likes.length}</span>
-        </button>
+        {/* Info Bottom Bar */}
+        <div className="absolute left-4 right-16 bottom-[calc(4.8rem+env(safe-area-inset-bottom,16px))] z-20 pointer-events-none">
+          <div className="flex items-center space-x-2 mb-2 pointer-events-auto cursor-pointer" onClick={() => navigate(`/profile/${post.userId}`)}>
+            <span className="text-white font-bold text-sm tracking-tight drop-shadow-md">@{post.userDisplayName.toLowerCase()}</span>
+            <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] text-white font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">Seguir</span>
+          </div>
+          
+          <p className="text-white text-xs sm:text-sm mb-3 line-clamp-2 max-w-[90%] leading-snug font-medium drop-shadow-md">
+            {post.caption}
+          </p>
 
-        <button className="flex flex-col items-center">
-          <MessageCircle className="w-8 h-8 text-white drop-shadow-lg" />
-          <span className="text-[12px] font-bold text-white mt-1 shadow-sm">{post.commentCount}</span>
-        </button>
-
-        <button className="flex flex-col items-center">
-          <Send className="w-7 h-7 text-white drop-shadow-lg" />
-        </button>
-
-        <button className="flex flex-col items-center">
-          <Bookmark className="w-7 h-7 text-white drop-shadow-lg" />
-        </button>
-
-        <button className="flex flex-col items-center">
-          <MoreVertical className="w-6 h-6 text-white drop-shadow-lg" />
-        </button>
-
-        <div className="w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 animate-spin-slow p-2 overflow-hidden flex items-center justify-center">
-             <Disc className="w-full h-full text-gray-500" />
+          <div className="flex items-center space-x-2 text-white bg-black/40 backdrop-blur-md rounded-full px-3 py-1.5 w-fit border border-white/10">
+            <Music className="w-3 h-3 text-vibe-neon-blue animate-pulse" />
+            <span className="text-[10px] sm:text-[11px] font-medium tracking-tight">Original Audio - Playzi Gaming</span>
+          </div>
         </div>
-      </div>
 
-      {/* Info Bottom Bar */}
-      <div className="absolute left-4 right-16 bottom-10 z-10 pointer-events-none">
-        <div className="flex items-center space-x-2 mb-3 pointer-events-auto cursor-pointer" onClick={() => navigate(`/profile/${post.userId}`)}>
-          <span className="text-white font-bold text-sm tracking-tight">@{post.userDisplayName.toLowerCase()}</span>
-          <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] text-white font-bold uppercase tracking-wider backdrop-blur-md border border-white/10">Seguir</span>
+        {/* Mute Control Top Right (Separated from camera button) */}
+        <button 
+          onClick={toggleMute}
+          className="absolute top-[calc(1rem+env(safe-area-inset-top,12px))] right-4 z-20 p-2.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 hover:bg-black/60 transition-all cursor-pointer"
+          title={isMuted ? "Ativar som" : "Desativar som"}
+        >
+          {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+        </button>
+
+        {/* Header Controls */}
+        <div className="absolute top-[calc(1rem+env(safe-area-inset-top,12px))] left-4 z-20 flex items-center space-x-3">
+          <button onClick={() => navigate(-1)} className="p-2.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 hover:bg-black/60 transition-all">
+            <ChevronLeft className="w-5 h-5 text-white" />
+          </button>
+          <h1 className="text-white font-black text-base sm:text-lg tracking-tight uppercase">Reels</h1>
         </div>
-        
-        <p className="text-white text-sm mb-4 line-clamp-2 max-w-[80%] leading-snug font-medium drop-shadow-md">
-          {post.caption}
-        </p>
-
-        <div className="flex items-center space-x-2 text-white bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 w-fit border border-white/5">
-          <Music className="w-3.5 h-3.5 animate-pulse" />
-          <span className="text-[11px] font-medium tracking-tight">Original Audio - Playzi Gaming</span>
-        </div>
-      </div>
-
-      {/* Mute Control Top Right */}
-      <button 
-        onClick={toggleMute}
-        className="absolute top-10 right-4 z-20 p-2 bg-black/20 backdrop-blur-md rounded-full border border-white/10"
-      >
-        {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
-      </button>
-
-      {/* Header Controls */}
-      <div className="absolute top-10 left-4 z-20 flex items-center space-x-4">
-         <button onClick={() => navigate(-1)} className="p-2 bg-black/20 backdrop-blur-md rounded-full border border-white/10">
-            <ChevronLeft className="w-6 h-6 text-white" />
-         </button>
-         <h1 className="text-white font-bold text-lg tracking-tight">Reels</h1>
       </div>
     </div>
   );
@@ -234,13 +239,14 @@ const Reels: React.FC = () => {
 
         <button 
           onClick={() => navigate('/create', { state: { type: 'video' } })}
-          className="absolute top-10 right-4 z-[60] p-2 bg-black/20 backdrop-blur-md rounded-full border border-white/10 hover:bg-vibe-neon-blue transition-all group pointer-events-auto"
+          className="absolute top-[calc(1rem+env(safe-area-inset-top,12px))] right-16 z-[60] p-2.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 hover:bg-vibe-neon-blue transition-all group pointer-events-auto cursor-pointer shadow-lg"
+          title="Gravar ou Publicar Reel"
         >
-          <Camera className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+          <Camera className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
         </button>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black to-transparent flex items-center justify-around z-50 px-6">
+      <nav className="fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom,16px))] pb-[env(safe-area-inset-bottom,16px)] bg-gradient-to-t from-black via-black/95 to-transparent flex items-center justify-around z-50 px-6 max-w-md mx-auto">
           <button onClick={() => navigate('/')} className="text-white opacity-60 hover:opacity-100 transition-opacity"><Home className="w-6 h-6" /></button>
           <button onClick={() => navigate('/explore')} className="text-white opacity-60 hover:opacity-100 transition-opacity"><Search className="w-6 h-6" /></button>
           <button className="text-white border-b-2 border-white pb-1"><PlayCircle className="w-6 h-6" /></button>

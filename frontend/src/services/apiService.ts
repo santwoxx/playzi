@@ -58,5 +58,26 @@ export const apiService = {
 
   async checkVip() {
     return this.fetchWithAuth('/checkVip');
+  },
+
+  async getAIInsight(kind: 'icebreaker' | 'compatibility' | 'recommendation', targetUserId: string, intent?: string) {
+    return this.fetchWithAuth('/ai/insight', {
+      method: 'POST',
+      body: JSON.stringify({ kind, targetUserId, intent }),
+    });
+  },
+
+  async moderateText(text: string) {
+    return this.fetchWithAuth('/moderation/text', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+  },
+
+  async moderateImage(image: string, mimeType: string) {
+    return this.fetchWithAuth('/moderation/image', {
+      method: 'POST',
+      body: JSON.stringify({ image, mimeType }),
+    });
   }
 };

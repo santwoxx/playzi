@@ -65,7 +65,7 @@ export default function Onboarding() {
   );
 
   const [formData, setFormData] = useState({
-    nickname: currentUser?.displayName || '',
+    nickname: (currentUser?.displayName || '').slice(0, 32),
     birthday: '',
     gender: 'other' as 'male' | 'female' | 'other',
     relationshipStatus: 'single' as 'single' | 'dating' | 'married' | 'searching' | 'open',
@@ -451,6 +451,7 @@ export default function Onboarding() {
                       type="text"
                       className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-6 text-white font-bold placeholder:text-white/30 focus:border-vibe-neon-blue/60 focus:bg-white/15 outline-none transition-all shadow-inner"
                       placeholder="Ex: @ghost_killer"
+                      maxLength={32}
                       value={formData.nickname}
                       onChange={e => setFormData({...formData, nickname: e.target.value})}
                     />
@@ -465,6 +466,7 @@ export default function Onboarding() {
                     <textarea 
                       className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-6 text-white font-semibold placeholder:text-white/30 focus:border-vibe-neon-blue/60 focus:bg-white/15 outline-none transition-all resize-none h-20 shadow-inner"
                       placeholder="Sou fã de RPG e FPS, procurando um squad para jogar..."
+                      maxLength={1000}
                       value={formData.bio}
                       onChange={e => setFormData({...formData, bio: e.target.value})}
                     />

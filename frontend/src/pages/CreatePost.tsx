@@ -182,7 +182,7 @@ export default function CreatePost() {
         </button>
         {/* Media / Preview Side */}
         <div className={cn(
-          "flex-1 relative flex items-center justify-center p-6 md:p-10 transition-all duration-500 min-h-[400px] md:min-h-0",
+          "flex-1 relative flex items-center justify-center p-4 sm:p-6 md:p-10 transition-all duration-500 min-h-[260px] sm:min-h-[340px] md:min-h-0",
           postType === 'text' ? bgColor : 'bg-black'
         )}>
           {postType === 'image' || postType === 'story' ? (mediaUrls.length > 0 ? (
@@ -372,9 +372,9 @@ export default function CreatePost() {
 
         {/* Form Side */}
         <div className="w-full md:w-[400px] border-l border-vibe-border flex flex-col bg-vibe-card">
-          <div className="p-6 md:p-10 flex-1 overflow-y-auto no-scrollbar">
+          <div className="p-4 sm:p-6 md:p-10 flex-1 overflow-y-auto no-scrollbar">
              {/* Header Mobile */}
-             <div className="flex items-center justify-between mb-8 md:hidden">
+             <div className="flex items-center justify-between mb-6 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] md:hidden">
                 <button onClick={() => navigate(-1)} className="p-2"><X className="w-6 h-6 text-vibe-text" /></button>
                 <h1 className="text-sm font-black text-vibe-text uppercase tracking-widest">Publicar</h1>
                 <div className="w-10" />
@@ -403,7 +403,7 @@ export default function CreatePost() {
                      value={caption}
                      onChange={(e) => setCaption(e.target.value)}
                      placeholder={postType === 'image' ? "Escreva algo épico..." : "O que está pensando, Gamer?"}
-                     className="w-full bg-vibe-bg border-2 border-vibe-border rounded-[24px] p-6 text-sm font-bold text-vibe-text focus:neon-border outline-none transition-all h-48 resize-none placeholder:opacity-30"
+                     className="w-full bg-vibe-bg border-2 border-vibe-border rounded-[24px] p-4 sm:p-6 text-sm font-bold text-vibe-text focus:neon-border outline-none transition-all h-32 sm:h-48 resize-none placeholder:opacity-30"
                    />
                  </div>
                )}
@@ -449,11 +449,11 @@ export default function CreatePost() {
           </div>
 
           {/* Action Footer */}
-          <div className="p-8 border-t border-vibe-border space-y-4 bg-vibe-bg/50">
+          <div className="p-4 sm:p-8 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] border-t border-vibe-border space-y-3 sm:space-y-4 bg-vibe-bg/50">
              <button 
                onClick={handleSubmit}
                disabled={!canPost}
-               className="w-full py-5 bg-vibe-gradient text-white font-black uppercase text-xs tracking-[0.2em] rounded-2xl shadow-xl shadow-vibe-neon-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center space-x-3"
+               className="w-full py-4 sm:py-5 bg-vibe-gradient text-white font-black uppercase text-xs tracking-[0.2em] rounded-2xl shadow-xl shadow-vibe-neon-blue/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center space-x-3"
              >
                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                  <>

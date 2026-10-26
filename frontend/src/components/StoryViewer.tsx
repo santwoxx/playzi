@@ -65,7 +65,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose, curren
       className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center"
     >
       {/* Header / Bars */}
-      <div className="absolute top-0 left-0 w-full p-4 z-20 space-y-4">
+      <div className="absolute top-0 left-0 w-full p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] z-20 space-y-4">
         <div className="flex space-x-1">
           {stories.map((_, i) => (
             <div key={i} className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
@@ -128,7 +128,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose, curren
         </div>
 
         {/* Swipe Hint */}
-        <div className="absolute bottom-10 left-0 w-full flex justify-center">
+        <div className="absolute bottom-[calc(2.5rem+env(safe-area-inset-bottom,0px))] left-0 w-full flex justify-center">
             <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse">Toque para navegar</p>
         </div>
       </div>

@@ -85,6 +85,8 @@ export default function Avatar({ src, alt = 'Avatar', className, fallbackText = 
           onError={() => setHasError(true)}
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
         />
       </div>
       {hasStatus && (

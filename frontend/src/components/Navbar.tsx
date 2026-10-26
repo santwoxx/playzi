@@ -17,7 +17,7 @@ export default function Navbar({ onInboxOpen }: { onInboxOpen: () => void }) {
     <motion.nav 
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 h-16 glass-nav flex items-center justify-between px-4 z-50 border-b border-white/5 pt-safe-area h-[calc(4rem+env(safe-area-inset-top))]"
+      className="fixed top-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-top,0px))] glass-nav flex items-center justify-between px-4 z-50 border-b border-white/5 pt-safe-area"
     >
       <div className="flex items-center space-x-2">
         {!isMainTab && (
