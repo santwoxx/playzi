@@ -27,8 +27,8 @@ export function useGamerStats() {
   const awardXP = async (amount: number) => {
     if (!currentUser) return;
 
-    let newXp = currentUser.xp + amount;
-    let newLevel = currentUser.level;
+    let newXp = (currentUser.xp ?? 0) + amount;
+    let newLevel = currentUser.level ?? 1;
     let nextLevelXp = getXPForLevel(newLevel);
 
     while (newXp >= nextLevelXp) {

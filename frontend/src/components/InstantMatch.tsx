@@ -8,6 +8,7 @@ import { apiService } from '../services/apiService';
 import { AIService } from '../services/aiService';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { soundService } from '../services/soundService';
 
 export default function InstantMatch() {
   const { currentUser } = useAuth();
@@ -92,8 +93,7 @@ export default function InstantMatch() {
             updateDoc(doc(db, 'users', currentUser.uid), { status: 'playing' }).catch(console.error);
           }
           
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
-          audio.play().catch(() => {});
+          soundService.play('match');
         }
       }
     });
@@ -194,8 +194,7 @@ export default function InstantMatch() {
             setIsSearching(false);
           }
 
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
-          audio.play().catch(() => {});
+          soundService.play('match');
         } else {
           // 4. No one found, post my own request with intent
           const docRef = await addDoc(collection(db, 'matchmaking'), {

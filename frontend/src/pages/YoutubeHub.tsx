@@ -23,6 +23,7 @@ import {
   Play, 
   Pause, 
   Volume2, 
+  VolumeX,
   LogOut, 
   Plus, 
   Sparkles, 
@@ -49,7 +50,15 @@ import {
   AtSign,
   Image,
   Smile,
-  Settings
+  Settings,
+  RotateCcw,
+  RotateCw,
+  Maximize2,
+  Minimize2,
+  Copy,
+  ExternalLink,
+  X,
+  Radio
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -237,6 +246,7 @@ export default function YoutubeHub() {
   const [chatInput, setChatInput] = useState('');
   const [participants, setParticipants] = useState<RoomUser[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   
   // Search States
   const [searchQuery, setSearchQuery] = useState('minecraft');
@@ -248,20 +258,36 @@ export default function YoutubeHub() {
   const [activeTab, setActiveTab] = useState<'chat' | 'users'>('chat');
   const [activeTabMobile, setActiveTabMobile] = useState<'chat' | 'search' | 'users'>('chat');
   const [showStickerPanel, setShowStickerPanel] = useState(false);
+  const [chatSoundEnabled, setChatSoundEnabled] = useState(true);
   const [micMuted, setMicMuted] = useState(false);
   const [showMobileHostControls, setShowMobileHostControls] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Live emoji reactions that float over the video for everyone in the room
   const { floating: floatingReactions, sendReaction } = useSyncReactions(roomId, currentUser?.uid);
 
-  const MOBILE_STICKERS = [
+  const ROOM_STICKERS = [
     { name: "Anya Calma", url: "https://media.giphy.com/media/X99M8D7B0M6X3c69U7/giphy.gif" },
     { name: "Hehe Risos", url: "https://media.giphy.com/media/FWi1f9rrS7A76/giphy.gif" },
     { name: "Gatinho Funk", url: "https://media.giphy.com/media/13CoXDiaCcC9R6/giphy.gif" },
+    { name: "Cat Jam", url: "https://media.giphy.com/media/jpbnoe3UIa8TU8LM13/giphy.gif" },
+    { name: "Pop Cat", url: "https://media.giphy.com/media/S5qrrqoYUMcYg/giphy.gif" },
     { name: "Meme Peixe", url: "https://media.giphy.com/media/Wsk4Y90asIs4xZcTda/giphy.gif" },
     { name: "Anya Cry", url: "https://media.giphy.com/media/3o7WTq6P2X3lT5Dq9O/giphy.gif" },
     { name: "Doge Dance", url: "https://media.giphy.com/media/hTAsf9O5YfPMFasZ9g/giphy.gif" },
+    { name: "Pepe Hype", url: "https://media.giphy.com/media/blSTtZehjAZ8I/giphy.gif" },
+    { name: "Mind Blown", url: "https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" },
   ];
+
+  const CHAT_QUICK_PROMPTS = [
+    "Fala rapaziada! 👋",
+    "Som tá insano! 🔥",
+    "Bora pro próximo! 🚀",
+    "GTA 6 vai ser épico! 🚗"
+  ];
+
+  const CHAT_QUICK_EMOJIS = ['🔥', '❤️', '👏', '😂', '🍿', '🚀', '💀', '🎶'];
 
   // Check username & identity profiles
   const userNick = currentUser?.nickname || currentUser?.displayName || 'Jogador';
@@ -536,10 +562,39 @@ export default function YoutubeHub() {
     };
   }, [roomId, currentUser, userNick, userAvatar]);
 
-  // Auto-scroll chat on incoming logs
+  // Web Audio chime for incoming messages
+  const playMessageChime = React.useCallback(() => {
+    if (!chatSoundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  }, [chatSoundEnabled]);
+
+  // Auto-scroll chat on incoming logs and play message sound
+  const lastMsgIdRef = useRef<string | null>(null);
   useEffect(() => {
+    if (chatMessages.length > 0) {
+      const lastMsg = chatMessages[chatMessages.length - 1];
+      if (lastMsgIdRef.current && lastMsg.id !== lastMsgIdRef.current && lastMsg.uid !== currentUser?.uid) {
+        playMessageChime();
+      }
+      lastMsgIdRef.current = lastMsg.id;
+    }
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+  }, [chatMessages, currentUser?.uid, playMessageChime]);
 
   const isHost = room ? room.host === currentUser?.uid : false;
   const canControl = isHost || (room?.allowControl ?? false);
@@ -931,6 +986,50 @@ export default function YoutubeHub() {
     }
   };
 
+  // Copy Room ID code
+  const handleCopyCode = () => {
+    if (!roomId) return;
+    navigator.clipboard.writeText(roomId).then(() => {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    });
+  };
+
+  // Quick Chat Prompts
+  const handleQuickPrompt = (promptText: string) => {
+    if (!roomId || !currentUser) return;
+    const chatRef = ref(rtdb, `rooms/${roomId}/chat`);
+    push(chatRef, {
+      uid: currentUser.uid,
+      username: userNick,
+      avatar: userAvatar,
+      text: promptText,
+      timestamp: Date.now()
+    }).catch(err => console.error("Quick prompt error:", err));
+  };
+
+  // Toggle fullscreen on video container
+  const handleToggleFullscreen = () => {
+    if (!playerContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      playerContainerRef.current.requestFullscreen?.().then(() => {
+        setIsFullscreen(true);
+      }).catch(() => {});
+    } else {
+      document.exitFullscreen?.().then(() => {
+        setIsFullscreen(false);
+      }).catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
   // --- RENDER MAIN ---
   if (roomId && roomExists === null) {
     return (
@@ -1141,21 +1240,33 @@ export default function YoutubeHub() {
 
       {/* ACTIVE TRANSMISSION SCREEN (roomId present) */}
       {roomId && (
-        <div className="w-full flex-grow flex flex-col h-[calc(100vh-68px)] md:h-auto overflow-hidden md:overflow-visible max-w-7xl mx-auto px-0 sm:px-4 py-0 md:py-4 mt-0 md:mt-2">
-          {/* Room Top Header Info (Hidden on Mobile) */}
-          <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between bg-white/5 md:bg-white/3 border border-white/10 rounded-2xl p-4 gap-4 mb-4">
-            <div className="flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-xl bg-vibe-neon-purple/20 border border-vibe-neon-purple/40 flex items-center justify-center shrink-0">
-                <Tv className="w-6 h-6 text-vibe-neon-purple" />
+        <div className="w-full flex-grow flex flex-col max-w-[1720px] mx-auto px-2 sm:px-4 md:px-5 py-1 md:py-2 mt-0 md:mt-1">
+          {/* Room Top Header Info (Desktop Version) */}
+          <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between bg-[#0c071d]/85 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 px-5 gap-3 mb-3.5 shadow-xl shadow-black/40">
+            <div className="flex items-center space-x-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-vibe-neon-purple/25 to-vibe-neon-pink/20 border border-vibe-neon-purple/40 flex items-center justify-center shrink-0 shadow-glow-purple">
+                <Tv className="w-5 h-5 text-vibe-neon-purple" />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center flex-wrap gap-1.5">
+                <div className="flex items-center flex-wrap gap-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[#FF2E93] bg-gradient-to-r from-vibe-neon-pink/15 to-transparent border-l-2 border-[#FF2E93] pl-2">
                     PLAYZI YOUTUBE HUB
                   </span>
-                  <span className="px-2 py-0.5 bg-white/10 text-white rounded text-[9px] font-black uppercase tracking-wider select-text">
-                    SALA: {roomId}
-                  </span>
+
+                  <button
+                    onClick={handleCopyCode}
+                    title="Clique para copiar o código da sala"
+                    className="flex items-center space-x-1 px-2.5 py-0.5 bg-white/5 hover:bg-white/15 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-wider text-slate-200 transition-all cursor-pointer"
+                  >
+                    <Copy className="w-2.5 h-2.5 text-vibe-neon-blue" />
+                    <span>SALA: {roomId}</span>
+                    {copiedCode && <span className="text-emerald-400 font-bold ml-1 text-[8px]">Copiado!</span>}
+                  </button>
+
+                  <div className="flex items-center space-x-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/25 rounded-md text-[8px] font-black uppercase tracking-wider text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Sincronizado</span>
+                  </div>
                   
                   {isUsingFallback && (
                     <span 
@@ -1167,25 +1278,48 @@ export default function YoutubeHub() {
                   )}
                 </div>
                 
-                <h2 className="text-sm font-black text-white truncate max-w-xs sm:max-w-md md:max-w-xl uppercase tracking-tight mt-1">
-                  {room ? room.videoTitle : 'Carregando sessão...'}
+                <h2 className="text-sm font-black text-white truncate max-w-xs sm:max-w-md md:max-w-2xl uppercase tracking-tight flex items-center gap-1.5 mt-1">
+                  <Video className="w-3.5 h-3.5 text-vibe-neon-pink shrink-0" />
+                  <span className="truncate">{room ? room.videoTitle : 'Carregando sessão...'}</span>
                 </h2>
               </div>
             </div>
 
             {/* CTA Option control actions */}
             <div className="flex items-center space-x-2 shrink-0 self-end md:self-auto">
+              <div className="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-slate-300">
+                <Users className="w-3.5 h-3.5 text-vibe-neon-blue" />
+                <span>{participants.length} conectados</span>
+              </div>
+
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={handleToggleAllowControl}
+                  className={cn(
+                    "flex items-center space-x-1 px-3 py-2 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                    room?.allowControl 
+                      ? "bg-vibe-neon-blue/15 border-vibe-neon-blue/35 text-vibe-neon-blue shadow-glow-blue/20" 
+                      : "bg-white/5 border-white/10 hover:bg-white/10 text-slate-400"
+                  )}
+                  title={room?.allowControl ? "Qualquer participante pode controlar o vídeo" : "Apenas o Host pode pausar/trocar vídeo"}
+                >
+                  {room?.allowControl ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                  <span>{room?.allowControl ? "Controle Livre" : "Host Exclusivo"}</span>
+                </button>
+              )}
+
               <button 
                 onClick={handleCopyLink}
                 className={cn(
-                  "flex items-center space-x-1.5 px-3 py-2 border text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
+                  "flex items-center space-x-1.5 px-3.5 py-2 border text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm",
                   copiedLink 
-                    ? "bg-green-500/10 border-green-500/30 text-green-400" 
-                    : "bg-white/5 border-white/5 hover:bg-white/15 text-slate-300"
+                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-glow" 
+                    : "bg-gradient-to-r from-vibe-neon-blue/15 to-vibe-neon-purple/15 border-vibe-neon-blue/30 hover:border-vibe-neon-blue/60 text-slate-200 hover:text-white"
                 )}
               >
-                {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
-                <span>{copiedLink ? 'Copiado!' : 'Convidar'}</span>
+                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-vibe-neon-blue" />}
+                <span>{copiedLink ? 'Link Copiado!' : 'Convidar'}</span>
               </button>
 
               {isHost ? (
@@ -1202,7 +1336,7 @@ export default function YoutubeHub() {
                       }
                     }
                   }}
-                  className="flex items-center space-x-1.5 px-3 py-2 bg-[#ff0055]/20 border border-[#ff0055]/40 hover:bg-[#ff0055]/30 text-[#ff0055] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-[#ff0055]/15 border border-[#ff0055]/35 hover:bg-[#ff0055]/25 text-[#ff0055] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all hover:shadow-glow-pink/30"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Fechar Sala</span>
@@ -1210,7 +1344,7 @@ export default function YoutubeHub() {
               ) : (
                 <button 
                   onClick={() => navigate('/watch/youtube')}
-                  className="flex items-center space-x-1.5 px-3 py-2 bg-white/5 border border-white/5 hover:bg-[#ff0055]/10 hover:border-[#ff0055]/20 hover:text-[#ff0055] text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-white/5 border border-white/10 hover:bg-[#ff0055]/15 hover:border-[#ff0055]/30 hover:text-[#ff0055] text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Sair</span>
@@ -1219,40 +1353,51 @@ export default function YoutubeHub() {
             </div>
           </div>
 
-          {/* THREE-COLUMN WORKSPACE OR TABBED DESKTOP/MOBILE WRAPPER */}
-          <div className="flex-grow flex flex-col md:grid md:grid-cols-12 gap-0 md:gap-4 min-h-0">
+          {/* THREE-COLUMN WORKSPACE (Desktop: 3 cols grid, Mobile: stacked tabs) */}
+          <div className="flex-grow flex flex-col md:grid md:grid-cols-12 gap-3 lg:gap-4 items-start min-h-0">
             
-            {/* COLUMN 1: YouTube Search Panel (4 Cols) - Desktop Persistent */}
-            <div className="hidden md:flex lg:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-4 flex-col h-[620px] overflow-hidden shrink-0">
-              <div className="flex items-center justify-between border-b border-white/5 pb-2.5 mb-3.5">
+            {/* COLUMN 1: YouTube Search Panel (3 Cols) - Desktop Persistent */}
+            <div className="hidden md:flex md:col-span-3 lg:col-span-3 xl:col-span-3 bg-[#0c071d]/85 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 flex-col h-[calc(100vh-130px)] min-h-[640px] max-h-[850px] overflow-hidden shrink-0 shadow-xl shadow-black/30">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2.5 mb-3">
                 <div className="flex items-center space-x-2">
                   <Search className="w-4 h-4 text-vibe-neon-blue" />
                   <span className="text-xs font-black uppercase tracking-wider text-white">Pesquisa Rave Direct</span>
                 </div>
-                <span className="text-[9px] text-[#A296BD] font-medium bg-[#1d1430] border border-vibe-neon-purple/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider select-none">
-                  {hasApiKey ? "YouTube Live Active" : "Sandbox Fallback"}
+                <span className="text-[8px] text-[#A296BD] font-bold bg-[#1d1430] border border-vibe-neon-purple/20 px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
+                  {hasApiKey ? "YouTube Live" : "Sandbox"}
                 </span>
               </div>
 
               {/* Search Bar Input */}
               <form 
                 onSubmit={(e) => { e.preventDefault(); handleSearch(searchQuery); }}
-                className="relative mb-3 shrink-0"
+                className="relative mb-2.5 shrink-0"
               >
                 <input 
                   type="text"
                   placeholder="Pesquise GTA6, Roblox, Minecraft, Lofi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#0a0515] border border-white/10 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-vibe-neon-blue/50 focus:shadow-glow-blue transition-all"
+                  className="w-full bg-[#070312] border border-white/10 rounded-xl py-2 pl-3 pr-16 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-vibe-neon-blue/50 focus:shadow-glow-blue transition-all"
                 />
-                <button 
-                  type="submit"
-                  disabled={searching}
-                  className="absolute right-1.5 top-1.5 p-1 bg-white/5 hover:bg-vibe-neon-blue/15 text-slate-300 hover:text-vibe-neon-blue rounded-lg transition-all"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
+                <div className="absolute right-1.5 top-1.5 flex items-center space-x-1">
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="p-1 text-slate-500 hover:text-slate-300"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button 
+                    type="submit"
+                    disabled={searching}
+                    className="p-1 bg-white/5 hover:bg-vibe-neon-blue/20 text-slate-300 hover:text-vibe-neon-blue rounded-lg transition-all"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </form>
 
               {/* Quick Tags Scrollable */}
@@ -1265,9 +1410,9 @@ export default function YoutubeHub() {
                       handleSearch(tag);
                     }}
                     className={cn(
-                      "px-2.5 py-1 text-[10px] font-bold rounded-lg shrink-0 border uppercase transition-all select-none",
+                      "px-2.5 py-1 text-[9px] font-bold rounded-lg shrink-0 border uppercase transition-all select-none cursor-pointer",
                       searchQuery.toLowerCase() === tag.toLowerCase()
-                        ? "bg-vibe-neon-blue/10 border-vibe-neon-blue/30 text-vibe-neon-blue font-black"
+                        ? "bg-vibe-neon-blue/15 border-vibe-neon-blue/40 text-vibe-neon-blue font-black"
                         : "bg-white/3 border-white/5 hover:bg-white/10 hover:border-white/10 text-slate-400 hover:text-slate-200"
                     )}
                   >
@@ -1277,12 +1422,12 @@ export default function YoutubeHub() {
               </div>
 
               {/* Results Scroller */}
-              <div className="flex-1 overflow-y-auto no-scrollbar space-y-2.5 pt-3.5 pb-2">
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pt-2.5 pb-1">
                 {searching ? (
                   <div className="flex flex-col items-center justify-center py-16 space-y-3">
                     <Globe className="w-6 h-6 text-vibe-neon-blue animate-spin" />
                     <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest animate-pulse">
-                      Consultando o YouTube API...
+                      Consultando o YouTube...
                     </span>
                   </div>
                 ) : searchResults.length === 0 ? (
@@ -1299,10 +1444,10 @@ export default function YoutubeHub() {
                         key={video.id}
                         onClick={() => handleSelectVideoToPlay(video.id, video.title)}
                         className={cn(
-                          "group rounded-xl p-2.5 cursor-pointer flex space-x-3 transition-all border relative overflow-hidden",
+                          "group rounded-xl p-2 cursor-pointer flex space-x-2.5 transition-all border relative overflow-hidden",
                           isSelected 
-                            ? "bg-vibe-neon-purple/10 border-vibe-neon-purple/40" 
-                            : "bg-[#0b0617] hover:bg-[#150d26] border-white/5 hover:border-white/10"
+                            ? "bg-vibe-neon-purple/15 border-vibe-neon-purple/50 shadow-glow-purple/20" 
+                            : "bg-[#070312] hover:bg-[#120a24] border-white/5 hover:border-white/10"
                         )}
                       >
                         {/* Selected vertical badge */}
@@ -1311,7 +1456,7 @@ export default function YoutubeHub() {
                         )}
 
                         {/* Video Thumbnail with hover play overlay */}
-                        <div className="relative w-24 h-14 aspect-video rounded-lg overflow-hidden border border-white/5 shrink-0 bg-black flex items-center justify-center">
+                        <div className="relative w-20 h-12 aspect-video rounded-lg overflow-hidden border border-white/5 shrink-0 bg-black flex items-center justify-center">
                           <img 
                             src={video.thumbnail} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -1319,23 +1464,35 @@ export default function YoutubeHub() {
                             referrerPolicy="no-referrer"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <Play className="w-4 h-4 text-white fill-white animate-pulse" />
+                            <Play className="w-3.5 h-3.5 text-white fill-white animate-pulse" />
                           </div>
+                          {video.duration && (
+                            <span className="absolute bottom-1 right-1 px-1 py-0.2 bg-black/80 rounded text-[7px] font-bold text-white">
+                              {video.duration}
+                            </span>
+                          )}
                         </div>
 
                         {/* Snippets detail metadata */}
                         <div className="min-w-0 flex-1 flex flex-col justify-between">
                           <div>
-                            <h5 className="text-[11px] font-black text-slate-200 line-clamp-2 leading-tight uppercase group-hover:text-vibe-neon-blue transition-colors">
-                              {video.title}
-                            </h5>
-                            <span className="text-[9px] text-[#A296BD] font-bold block mt-1">
+                            <div className="flex items-center space-x-1">
+                              {isSelected && (
+                                <span className="text-[7px] px-1 py-0.2 rounded bg-vibe-neon-pink/20 text-vibe-neon-pink font-black uppercase">
+                                  Tocando
+                                </span>
+                              )}
+                              <h5 className="text-[10px] font-black text-slate-200 line-clamp-2 leading-tight uppercase group-hover:text-vibe-neon-blue transition-colors">
+                                {video.title}
+                              </h5>
+                            </div>
+                            <span className="text-[8px] text-[#A296BD] font-bold block mt-0.5 truncate">
                               {video.channelTitle}
                             </span>
                           </div>
                           
                           {video.publishedAt && (
-                            <span className="text-[8px] text-slate-500 uppercase">
+                            <span className="text-[7px] text-slate-500 uppercase">
                               {video.publishedAt}
                             </span>
                           )}
@@ -1347,11 +1504,14 @@ export default function YoutubeHub() {
               </div>
             </div>
 
-            {/* COLUMN 2: Sync Video Player & Host Controls (5 Cols) */}
-            <div className="lg:col-span-5 flex flex-col shrink-0 md:shrink md:space-y-4">
+            {/* COLUMN 2: Sync Video Player & Host Controls (6 Cols) */}
+            <div className="col-span-12 md:col-span-5 lg:col-span-6 xl:col-span-6 flex flex-col shrink-0 md:shrink space-y-3">
               
               {/* Main Player Frame box */}
-              <div className="bg-[#040108] border-b md:border border-white/10 md:rounded-2xl overflow-hidden shadow-glow-purple flex flex-col relative z-20 shrink-0">
+              <div 
+                ref={playerContainerRef}
+                className="bg-[#040108] border border-white/10 md:rounded-2xl overflow-hidden shadow-2xl shadow-purple-950/40 flex flex-col relative z-20 shrink-0"
+              >
                 <div className="aspect-video w-full bg-black relative flex items-center justify-center">
                   
                   {/* Real YouTube SDK Iframe container */}
@@ -1394,20 +1554,20 @@ export default function YoutubeHub() {
                   {/* Top Bar HUD lock indicators */}
                   {parsedYtVideoId && (
                     <div className="absolute top-2.5 left-2.5 right-2.5 pointer-events-none flex items-center justify-between">
-                      <div className="bg-black/85 border border-white/10 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-green-400 flex items-center space-x-1 shadow-md">
-                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-ping shrink-0" />
+                      <div className="bg-black/85 border border-white/10 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-emerald-400 flex items-center space-x-1.5 shadow-md backdrop-blur">
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping shrink-0" />
                         <span>Sincronia Servidor Ativa</span>
                       </div>
                       
                       {canControl && (
-                        <div className="bg-black/85 border border-vibe-neon-blue/20 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-vibe-neon-blue shadow-md">
+                        <div className="bg-black/85 border border-vibe-neon-blue/30 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-vibe-neon-blue shadow-md backdrop-blur">
                           Anfitrião Autorizado
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* INCREDIBLE INTERACTION BLOCKER DIV ON TOP OF THE YOUTUBE IFRAME */}
+                  {/* INTERACTION BLOCKER DIV ON TOP OF THE YOUTUBE IFRAME FOR GUESTS */}
                   {!canControl && (
                     <div className="absolute inset-0 z-20 bg-transparent" />
                   )}
@@ -1426,30 +1586,39 @@ export default function YoutubeHub() {
                 </div>
 
                 {/* Video Info banner strip */}
-                <div className="p-3.5 border-t border-white/5 bg-[#0a0515] flex items-center justify-between">
+                <div className="p-3 border-t border-white/5 bg-[#0a0515] flex items-center justify-between">
                   <div className="min-w-0 flex-1 pr-3">
                     <span className="text-[8px] text-[#A296BD] uppercase font-black tracking-widest block mb-0.5">ESTREANDO AGORA</span>
-                    <h3 className="text-xs font-black text-white truncate max-w-xs uppercase">
+                    <h3 className="text-xs font-black text-white truncate max-w-sm uppercase">
                       {room ? room.videoTitle : 'Pesquise para ver'}
                     </h3>
                   </div>
                   
-                  <div className="shrink-0 flex items-center space-x-2">
+                  <div className="shrink-0 flex items-center space-x-1.5">
                     <button 
                       type="button"
                       onClick={togglePlayPause}
                       className={cn(
-                        "p-2 rounded-xl transition-all border",
+                        "p-2 rounded-xl transition-all border cursor-pointer",
                         !canControl 
                           ? "opacity-50 cursor-not-allowed bg-white/5 border-white/5 text-slate-500"
                           : room?.playing 
-                            ? "bg-[#ff0055]/15 border-[#ff0055]/25 text-[#ff0055] hover:bg-[#ff0055]/25"
-                            : "bg-vibe-neon-blue/15 border-vibe-neon-blue/25 text-vibe-neon-blue hover:bg-vibe-neon-blue/25"
+                            ? "bg-[#ff0055]/15 border-[#ff0055]/30 text-[#ff0055] hover:bg-[#ff0055]/25"
+                            : "bg-vibe-neon-blue/15 border-vibe-neon-blue/30 text-vibe-neon-blue hover:bg-vibe-neon-blue/25"
                       )}
                       disabled={!canControl}
                       title={canControl ? "Play/Pause" : "Apenas o host possui o controle de reprodução"}
                     >
                       {room?.playing ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleFullscreen}
+                      className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/15 text-slate-300 transition-all cursor-pointer"
+                      title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+                    >
+                      {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
 
                     {/* Simple settings toggle triggers for Host controls on mobile */}
@@ -1469,13 +1638,13 @@ export default function YoutubeHub() {
                   </div>
                 </div>
 
-                {/* Reactions for everyone in the room + invite (the header with "Convidar" is hidden on mobile) */}
+                {/* Reactions for everyone in the room + invite */}
                 <SyncReactionBar onReact={sendReaction} onInvite={handleCopyLink} invited={copiedLink} />
               </div>
 
               {/* Host Expandable Controls (Mobile Drawer version) */}
               {canControl && showMobileHostControls && (
-                <div className="md:hidden bg-[#0a0515]/95 p-4 border-b border-white/10 space-y-4 shrink-0 animate-fade-in z-25">
+                <div className="md:hidden bg-[#0a0515]/95 p-4 border border-white/10 rounded-2xl space-y-3 shrink-0 animate-fade-in z-25">
                   <div className="flex items-center justify-between border-b border-white/5 pb-2">
                     <span className="text-[10px] font-black uppercase text-vibe-neon-blue">Sintonizar Canal & Navegar</span>
                     <button 
@@ -1547,71 +1716,68 @@ export default function YoutubeHub() {
                       </button>
                     </div>
                   </form>
-
-                  {isHost && (
-                    <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
-                      <button 
-                        type="button"
-                        onClick={handleToggleAllowControl}
-                        className={cn(
-                          "px-2.5 py-1.5 border rounded-lg text-[9px] font-black uppercase flex items-center space-x-1.5",
-                          room?.allowControl ? "bg-vibe-neon-blue/20 border-vibe-neon-blue text-vibe-neon-blue" : "bg-white/5 border-white/10 text-vibe-muted"
-                        )}
-                      >
-                        {room?.allowControl ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                        <span>Convidado Controla</span>
-                      </button>
-
-                      <button 
-                        type="button"
-                        onClick={handleCopyLink}
-                        className="px-2.5 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase text-white flex items-center space-x-1"
-                      >
-                        {copiedLink ? <Check className="w-3 h-3 text-emerald-400" /> : <Share2 className="w-3 h-3" />}
-                        <span>{copiedLink ? "Copiado!" : "Convidar"}</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* Real Seek adjustment host panel */}
+              {/* Host Controller Panel (Seek + Chrome URL Selector) */}
               {canControl && (
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                  <div className="flex items-center space-x-2 border-b border-white/5 pb-2.5 mb-3">
-                    <Laptop className="w-4 h-4 text-vibe-neon-purple" />
-                    <span className="text-xs font-black uppercase text-white tracking-wider">Painel do Host / Controlador</span>
+                <div className="bg-[#0c071d]/85 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <div className="flex items-center space-x-2">
+                      <Laptop className="w-4 h-4 text-vibe-neon-purple" />
+                      <span className="text-xs font-black uppercase text-white tracking-wider">Painel do Host / Controlador</span>
+                    </div>
+
+                    {isHost && (
+                      <button 
+                        onClick={handleToggleAllowControl}
+                        className={cn(
+                          "flex items-center space-x-1 px-2.5 py-1 border rounded-lg text-[9px] font-black uppercase transition-all",
+                          room?.allowControl 
+                            ? "bg-vibe-neon-blue/15 border-vibe-neon-blue/30 text-vibe-neon-blue" 
+                            : "bg-white/5 border-white/10 text-slate-400"
+                        )}
+                      >
+                        {room?.allowControl ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        <span>{room?.allowControl ? "Controle Livre" : "Host Exclusivo"}</span>
+                      </button>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 xs:grid-cols-4 gap-2.5">
+                  {/* Seek adjustment buttons */}
+                  <div className="grid grid-cols-4 gap-2">
                     <button 
                       onClick={() => handleManualSeek(-30)}
-                      className="px-2.5 py-2 bg-white/5 border border-white/5 hover:border-white/15 rounded-xl text-[10px] font-bold text-slate-300 transition-all uppercase tracking-wider"
+                      className="flex items-center justify-center space-x-1 px-2 py-2 bg-white/5 border border-white/5 hover:border-vibe-neon-purple/40 hover:bg-white/10 rounded-xl text-[10px] font-black text-slate-300 transition-all uppercase tracking-wider cursor-pointer"
                     >
-                      -30 Segundos
+                      <RotateCcw className="w-3 h-3 text-vibe-neon-purple" />
+                      <span>-30s</span>
                     </button>
                     <button 
                       onClick={() => handleManualSeek(-10)}
-                      className="px-2.5 py-2 bg-white/5 border border-white/5 hover:border-white/15 rounded-xl text-[10px] font-bold text-slate-300 transition-all uppercase tracking-wider"
+                      className="flex items-center justify-center space-x-1 px-2 py-2 bg-white/5 border border-white/5 hover:border-vibe-neon-purple/40 hover:bg-white/10 rounded-xl text-[10px] font-black text-slate-300 transition-all uppercase tracking-wider cursor-pointer"
                     >
-                      -10 Segundos
+                      <RotateCcw className="w-3 h-3 text-vibe-neon-purple" />
+                      <span>-10s</span>
                     </button>
                     <button 
                       onClick={() => handleManualSeek(10)}
-                      className="px-2.5 py-2 bg-white/5 border border-white/5 hover:border-white/15 rounded-xl text-[10px] font-bold text-slate-300 transition-all uppercase tracking-wider"
+                      className="flex items-center justify-center space-x-1 px-2 py-2 bg-white/5 border border-white/5 hover:border-vibe-neon-blue/40 hover:bg-white/10 rounded-xl text-[10px] font-black text-slate-300 transition-all uppercase tracking-wider cursor-pointer"
                     >
-                      +10 Segundos
+                      <RotateCw className="w-3 h-3 text-vibe-neon-blue" />
+                      <span>+10s</span>
                     </button>
                     <button 
                       onClick={() => handleManualSeek(30)}
-                      className="px-2.5 py-2 bg-white/5 border border-white/5 hover:border-white/15 rounded-xl text-[10px] font-bold text-slate-300 transition-all uppercase tracking-wider"
+                      className="flex items-center justify-center space-x-1 px-2 py-2 bg-white/5 border border-white/5 hover:border-vibe-neon-blue/40 hover:bg-white/10 rounded-xl text-[10px] font-black text-slate-300 transition-all uppercase tracking-wider cursor-pointer"
                     >
-                      +30 Segundos
+                      <RotateCw className="w-3 h-3 text-vibe-neon-blue" />
+                      <span>+30s</span>
                     </button>
                   </div>
 
                   {/* Navegador Google Chrome / Custom URL Selector */}
-                  <div className="mt-4 pt-4 border-t border-white/5">
+                  <div className="pt-2 border-t border-white/5">
                     <label className="text-[9px] font-black uppercase text-vibe-neon-blue tracking-widest block mb-1.5 flex items-center">
                       <Globe className="w-3.5 h-3.5 mr-1 text-vibe-neon-blue animate-pulse" />
                       Navegador Google Chrome (Navegar em qualquer URL/Vídeo)
@@ -1622,7 +1788,6 @@ export default function YoutubeHub() {
                         const targetUrl = chromeUrlInput.trim();
                         if (!targetUrl) return;
                         
-                        // Convert shorthand without protocols safely
                         let finalUrl = targetUrl;
                         if (!/^https?:\/\//i.test(finalUrl)) {
                           finalUrl = `https://${finalUrl}`;
@@ -1657,67 +1822,36 @@ export default function YoutubeHub() {
                     >
                       <input 
                         type="text"
-                        placeholder="Digite um link, ex: google.com, twitch.tv, vimeo.com..."
+                        placeholder="Digite um link, ex: twitch.tv, vimeo.com, soundcloud.com..."
                         value={chromeUrlInput}
                         onChange={(e) => setChromeUrlInput(e.target.value)}
-                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-vibe-neon-blue/50 transition-all placeholder-slate-600"
+                        className="flex-1 bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-vibe-neon-blue/50 transition-all placeholder-slate-600"
                       />
                       <button 
                         type="submit"
-                        className="px-3.5 py-2 bg-vibe-neon-pink/20 hover:bg-vibe-neon-pink text-vibe-neon-pink hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-vibe-neon-pink/30 shadow-glow hover:shadow-glow-pink"
+                        className="px-3.5 py-2 bg-gradient-to-r from-vibe-neon-blue to-vibe-neon-purple hover:opacity-90 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-glow cursor-pointer"
                       >
                         Navegar
                       </button>
                     </form>
                   </div>
-
-                  {isHost && (
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-bold text-slate-200 uppercase tracking-tight block">Liberar Controles da Sala</span>
-                        <p className="text-[9px] text-slate-500">Permitir que convidados dêem Pause, Play ou procurem vídeo</p>
-                      </div>
-
-                      <button 
-                        onClick={handleToggleAllowControl}
-                        className={cn(
-                          "flex items-center space-x-1 px-3 py-1.5 border rounded-lg text-[9px] font-bold uppercase transition-all",
-                          room?.allowControl 
-                            ? "bg-vibe-neon-blue/15 border-vibe-neon-blue/30 text-vibe-neon-blue" 
-                            : "bg-white/5 border-white/10 text-slate-400"
-                        )}
-                      >
-                        {room?.allowControl ? (
-                          <>
-                            <Unlock className="w-3.5 h-3.5" />
-                            <span>Controle Livre</span>
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-3.5 h-3.5" />
-                            <span>Exclusivo Host</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
               {/* Status and instruction notice board */}
-              <div className="bg-gradient-to-br from-[#100721] to-[#12082a] border border-vibe-neon-purple/20 rounded-2xl p-4 flex items-start space-x-3 shadow-glow">
-                <Skull className="w-5 h-5 text-[#FF2E93] shrink-0 mt-0.5 animate-pulse" />
-                <div className="space-y-1">
+              <div className="bg-gradient-to-br from-[#100721]/90 to-[#12082a]/90 border border-vibe-neon-purple/20 rounded-2xl p-3 flex items-start space-x-2.5 shadow-glow">
+                <Skull className="w-4 h-4 text-[#FF2E93] shrink-0 mt-0.5 animate-pulse" />
+                <div className="space-y-0.5">
                   <span className="text-[10px] font-black text-white uppercase tracking-wide block">Rave Sync Ativo</span>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Você pode selecionar outros vídeos a qualquer momento. Se o Host trocar de vídeo na barra esquerda, todos os membros sincronizam instantaneamente!
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Você pode selecionar vídeos na barra esquerda a qualquer momento. Se o Host trocar de vídeo, todos sincronizam instantaneamente!
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* COLUMN 3: Active Tabbed Interface (Persistent Right on Desktop, Tabbed Switcher below Player on Mobile) */}
-            <div className="flex-grow flex flex-col md:col-span-3 bg-black/25 md:bg-white/5 md:border border-white/10 md:rounded-2xl p-0 md:p-4 min-h-0 h-[620px] overflow-hidden">
+            {/* COLUMN 3: Active Tabbed Interface (Chat & Members) */}
+            <div className="col-span-12 md:col-span-4 lg:col-span-3 xl:col-span-3 bg-[#0c071d]/85 backdrop-blur-xl border border-white/10 rounded-2xl flex flex-col h-[calc(100vh-130px)] min-h-[640px] max-h-[850px] overflow-hidden shadow-xl shadow-black/30">
               
               {/* Squad Horizontal View (Mobile Only) */}
               <div className="md:hidden bg-black/35 border-b border-white/5 px-4 py-2 shrink-0 flex items-center justify-between gap-3 animate-fade-in relative z-10">
@@ -1746,47 +1880,57 @@ export default function YoutubeHub() {
               </div>
 
               {/* TAB SELECTOR HEADER - Desktop Version Only */}
-              <div className="hidden md:flex border-b border-white/5 pb-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('chat')}
-                  className={cn(
-                    "flex-1 flex items-center justify-center space-x-1.5 pb-2 text-[11px] font-black uppercase tracking-wider relative transition-all",
-                    activeTab === 'chat' ? "text-vibe-neon-pink" : "text-slate-400 hover:text-slate-200"
-                  )}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Chat</span>
-                  {chatMessages.length > 0 && (
-                    <span className="bg-vibe-neon-pink text-white rounded-full text-[8px] font-black w-4 h-4 flex items-center justify-center scale-90 shrink-0">
-                      {chatMessages.length}
-                    </span>
-                  )}
-                  {activeTab === 'chat' && (
-                    <motion.div layoutId="room-active-tab-indicator-desktop" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-vibe-neon-pink" />
-                  )}
-                </button>
+              <div className="hidden md:flex items-center justify-between border-b border-white/5 px-3 py-2.5 shrink-0 bg-[#090415]">
+                <div className="flex items-center space-x-1 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('chat')}
+                    className={cn(
+                      "flex-1 flex items-center justify-center space-x-1.5 py-1.5 px-2 text-[11px] font-black uppercase tracking-wider relative transition-all rounded-lg cursor-pointer",
+                      activeTab === 'chat' 
+                        ? "text-vibe-neon-pink bg-vibe-neon-pink/10" 
+                        : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                    )}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Chat</span>
+                    {chatMessages.length > 0 && (
+                      <span className="bg-vibe-neon-pink text-white rounded-full text-[8px] font-black px-1.5 py-0.2 shrink-0">
+                        {chatMessages.length}
+                      </span>
+                    )}
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('users')}
+                    className={cn(
+                      "flex-1 flex items-center justify-center space-x-1.5 py-1.5 px-2 text-[11px] font-black uppercase tracking-wider relative transition-all rounded-lg cursor-pointer",
+                      activeTab === 'users' 
+                        ? "text-vibe-neon-blue bg-vibe-neon-blue/10" 
+                        : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                    )}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Membros</span>
+                    <span className="bg-vibe-neon-blue text-white rounded-full text-[8px] font-bold px-1.5 py-0.2 shrink-0">
+                      {participants.length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Sound toggle button */}
                 <button
                   type="button"
-                  onClick={() => setActiveTab('users')}
-                  className={cn(
-                    "flex-1 flex items-center justify-center space-x-1.5 pb-2 text-[11px] font-black uppercase tracking-wider relative transition-all",
-                    activeTab === 'users' ? "text-vibe-neon-blue" : "text-slate-400 hover:text-slate-200"
-                  )}
+                  onClick={() => setChatSoundEnabled(!chatSoundEnabled)}
+                  className="p-1.5 ml-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                  title={chatSoundEnabled ? "Desativar som do chat" : "Ativar som do chat"}
                 >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Membros</span>
-                  <span className="bg-vibe-neon-blue text-white rounded-full text-[8px] font-bold w-4 h-4 flex items-center justify-center scale-90 shrink-0">
-                    {participants.length}
-                  </span>
-                  {activeTab === 'users' && (
-                    <motion.div layoutId="room-active-tab-indicator-desktop" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-vibe-neon-blue" />
-                  )}
+                  {chatSoundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
                 </button>
               </div>
 
-              {/* TAB SELECTOR HEADER - Mobile Version (With search play features) */}
+              {/* TAB SELECTOR HEADER - Mobile Version */}
               <div className="md:hidden bg-[#07030f]/95 border-b border-white/10 flex items-center py-1.5 shrink-0 relative z-10">
                 <button
                   type="button"
@@ -1836,8 +1980,8 @@ export default function YoutubeHub() {
 
               {/* MOBILE ONLY TAB: SEARCH PLAYLIST */}
               <div className={cn(
-                "md:hidden flex-Grow flex flex-col min-h-0 p-3",
-                activeTabMobile === 'search' ? "flex" : "hidden"
+                "flex-grow flex-col min-h-0 p-3",
+                activeTabMobile === 'search' ? "flex md:hidden" : "hidden"
               )}>
                 <form 
                   onSubmit={(e) => {
@@ -1863,7 +2007,7 @@ export default function YoutubeHub() {
                 </form>
 
                 {/* Scroller de Resultados Mobile */}
-                <div className="flex-1 overflow-y-auto no-scrollbar space-y-2.5 min-h-0 pt-1 pb-2">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 min-h-0 pt-1 pb-2">
                   {searching ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <Globe className="w-5 h-5 text-vibe-neon-blue animate-spin mb-2" />
@@ -1893,33 +2037,50 @@ export default function YoutubeHub() {
                 </div>
               </div>
 
-              {/* CHAT TAB (INTEGRATED FOR BOTH) */}
+              {/* CHAT TAB - Cleanly shown based on activeTab on Desktop & activeTabMobile on Mobile */}
               <div className={cn(
-                "flex-grow flex flex-col min-h-0",
-                "md:flex", // Always active for desktop state block
-                "md:hidden", // Controlled on mobile dynamically
-                (activeTab === 'chat' && activeTabMobile === 'chat') ? "flex" : (activeTabMobile === 'chat' ? "flex" : "hidden")
+                "flex-grow flex-col min-h-0",
+                activeTab === 'chat' ? "md:flex" : "md:hidden",
+                activeTabMobile === 'chat' ? "flex" : "hidden"
               )}>
                 
                 {/* Rolling Chat list view */}
-                <div className="flex-grow overflow-y-auto no-scrollbar px-3 py-3 space-y-3.5 min-h-0">
+                <div className="flex-grow overflow-y-auto custom-scrollbar px-3 py-3 space-y-3 min-h-0">
                   {chatMessages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                      <MessageSquare className="w-8 h-8 text-slate-700 mb-2 animate-pulse" />
-                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Resenha Vazia</span>
-                      <p className="text-[9px] text-slate-600 mt-1 max-w-[170px]">Engaje o pessoal mandando uma mensagem fofa para a rapaziada!</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center p-4 my-auto">
+                      <div className="w-12 h-12 rounded-2xl bg-vibe-neon-pink/10 border border-vibe-neon-pink/30 flex items-center justify-center mb-3 shadow-glow-pink/20">
+                        <MessageSquare className="w-6 h-6 text-vibe-neon-pink animate-pulse" />
+                      </div>
+                      <span className="text-xs text-white font-black uppercase tracking-wider">Resenha da Sala</span>
+                      <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">
+                        Nenhuma mensagem ainda. Mande um salve para o squad ou use as sugestões abaixo!
+                      </p>
+
+                      {/* Quick starter prompts */}
+                      <div className="flex flex-col gap-1.5 mt-4 w-full max-w-[220px]">
+                        {CHAT_QUICK_PROMPTS.map((prompt) => (
+                          <button
+                            key={prompt}
+                            onClick={() => handleQuickPrompt(prompt)}
+                            className="px-2.5 py-1.5 bg-white/5 hover:bg-vibe-neon-pink/20 border border-white/10 hover:border-vibe-neon-pink/40 text-[10px] text-slate-300 hover:text-white rounded-xl transition-all text-left truncate cursor-pointer"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     chatMessages.map((msg) => {
                       const isSelf = msg.uid === currentUser?.uid;
                       const isBot = msg.uid === 'system';
+                      const isMsgHost = room?.host === msg.uid;
                       
                       if (isBot) {
                         return (
                           <div key={msg.id} className="flex justify-center my-1.5 animate-fade-in">
-                            <div className="flex items-center space-x-2 bg-black/60 backdrop-blur border border-white/5 px-4 py-1.5 rounded-full shadow-md">
-                              <img src={msg.avatar} className="w-4 h-4 rounded-full object-cover border border-white/15 shrink-0" alt="" />
-                              <span className="text-[10px] font-black text-rose-400 uppercase tracking-wide">{msg.text}</span>
+                            <div className="flex items-center space-x-1.5 bg-purple-950/60 backdrop-blur border border-purple-500/30 px-3 py-1 rounded-full shadow-md text-center max-w-[95%]">
+                              <Sparkles className="w-3 h-3 text-vibe-neon-pink shrink-0" />
+                              <span className="text-[9px] font-bold text-rose-300 uppercase tracking-tight">{msg.text}</span>
                             </div>
                           </div>
                         );
@@ -1932,21 +2093,24 @@ export default function YoutubeHub() {
                         <div 
                           key={msg.id} 
                           className={cn(
-                            "flex items-start space-x-2.5 animate-fade-in",
+                            "flex items-start space-x-2 animate-fade-in group",
                             isSelf ? "flex-row-reverse space-x-reverse" : ""
                           )}
                         >
                           <img 
                             src={msg.avatar} 
-                            className="w-7 h-7 rounded-lg border border-white/10 shrink-0 mt-0.5 object-cover" 
+                            className="w-7 h-7 rounded-xl border border-white/10 shrink-0 mt-0.5 object-cover" 
                             alt="Avatar" 
                           />
-                          <div className="space-y-1 max-w-[78%] flex flex-col">
-                            <div className={cn("flex items-baseline space-x-1.5", isSelf ? "justify-end flex-row-reverse space-x-reverse" : "")}>
-                              <span className="text-[9px] font-black text-[#00f2ff] truncate uppercase max-w-[80px]">
-                                {msg.username}
+                          <div className="space-y-0.5 max-w-[82%] flex flex-col">
+                            <div className={cn("flex items-center space-x-1.5", isSelf ? "justify-end flex-row-reverse space-x-reverse" : "")}>
+                              <span className="text-[9px] font-black text-[#00f2ff] truncate uppercase max-w-[90px]">
+                                {isSelf ? 'Você' : msg.username}
                               </span>
-                              <span className="text-[8px] text-vibe-muted/65 font-bold">
+                              {isMsgHost && (
+                                <Crown className="w-2.5 h-2.5 text-amber-400 fill-amber-400 shrink-0" title="Anfitrião" />
+                              )}
+                              <span className="text-[7px] text-slate-500 font-bold">
                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
@@ -1955,7 +2119,7 @@ export default function YoutubeHub() {
                               <img 
                                 src={stickerUrl} 
                                 className={cn(
-                                  "w-32 h-32 object-cover rounded-2xl border border-white/15 shadow-glow",
+                                  "w-28 h-28 object-cover rounded-xl border border-white/15 shadow-glow hover:scale-105 transition-transform",
                                   isSelf ? "self-end" : "self-start"
                                 )} 
                                 alt="Sticker" 
@@ -1963,10 +2127,10 @@ export default function YoutubeHub() {
                               />
                             ) : (
                               <div className={cn(
-                                "p-2 rounded-xl text-[11px] font-medium leading-normal break-words shadow-sm border text-white",
+                                "px-3 py-1.5 rounded-2xl text-[11px] leading-relaxed break-words shadow-sm border",
                                 isSelf 
-                                  ? "bg-vibe-neon-pink/15 border-vibe-neon-pink/25 rounded-tr-none text-right" 
-                                  : "bg-[#0c0617] border-white/5 rounded-tl-none"
+                                  ? "bg-gradient-to-r from-vibe-neon-pink/20 to-vibe-neon-purple/25 border-vibe-neon-pink/35 text-white rounded-tr-none text-right" 
+                                  : "bg-white/[0.05] border-white/10 text-slate-100 rounded-tl-none"
                               )}>
                                 {msg.text}
                               </div>
@@ -1979,21 +2143,33 @@ export default function YoutubeHub() {
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Mobile stickers drawer block */}
+                {/* Stickers Drawer */}
                 {showStickerPanel && (
-                  <div className="bg-black/85 border border-white/10 rounded-2xl p-3 mb-2 mx-3 animate-fade-in shrink-0 relative z-10">
-                    <span className="text-[10px] font-black uppercase text-vibe-neon-pink block mb-2">Selecione uma Figurinha</span>
-                    <div className="flex items-center overflow-x-auto no-scrollbar gap-3 py-1.5">
-                      {MOBILE_STICKERS.map((stick) => (
+                  <div className="bg-[#0e0722] border border-white/15 rounded-2xl p-2.5 mb-2 mx-3 animate-fade-in shrink-0 relative z-10 shadow-xl shadow-black/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] font-black uppercase text-vibe-neon-pink flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-vibe-neon-pink" /> Selecione uma Figurinha
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowStickerPanel(false)}
+                        className="text-slate-400 hover:text-white text-[9px] font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2 py-1 max-h-36 overflow-y-auto custom-scrollbar">
+                      {ROOM_STICKERS.map((stick) => (
                         <button
                           key={stick.name}
                           type="button"
                           onClick={() => handleSendSticker(stick.url)}
-                          className="shrink-0 group hover:scale-105 transition-transform"
+                          className="group hover:scale-105 transition-transform aspect-square flex items-center justify-center p-0.5 rounded-xl hover:bg-white/10 cursor-pointer"
+                          title={stick.name}
                         >
                           <img 
                             src={stick.url} 
-                            className="w-12 h-12 object-cover rounded-lg border border-white/10 hover:border-vibe-neon-pink transition-all shadow-md"
+                            className="w-full h-full object-cover rounded-lg border border-white/10 group-hover:border-vibe-neon-pink transition-all shadow-md"
                             alt={stick.name} 
                             referrerPolicy="no-referrer"
                           />
@@ -2003,145 +2179,149 @@ export default function YoutubeHub() {
                   </div>
                 )}
 
-                {/* Input Chat form (Desktop style) */}
-                <form onSubmit={handleSendMessage} className="hidden md:flex mt-2 mx-3 mb-3 p-1.5 border-t border-white/5 space-x-1.5 shrink-0">
-                  <input 
-                    type="text"
-                    placeholder="Anote as resenhas..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    className="flex-1 bg-[#0b0615] border border-white/10 rounded-xl py-2 px-3 text-xs placeholder-slate-600 text-white focus:outline-none focus:border-vibe-neon-pink/50 transition-all"
-                  />
-                  <button 
-                    type="submit"
-                    className="p-2 bg-gradient-to-r from-[#ff0055] to-vibe-neon-pink text-white rounded-xl hover:shadow-glow-pink transition-all shrink-0"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </form>
-
-                {/* Input form footer structure (Mobile Style matching requested layout) */}
-                <div className="md:hidden mx-3 mb-3 pt-2 border-t border-white/5 flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setMicMuted(!micMuted)}
-                    className={cn(
-                      "p-2.5 rounded-full flex items-center justify-center shrink-0 shadow-md transition-colors",
-                      micMuted ? "bg-red-500 text-white" : "bg-white text-black hover:bg-slate-200"
-                    )}
-                    title={micMuted ? "Mutado" : "Microfone"}
-                  >
-                    <Mic className="w-4 h-4" />
-                  </button>
-
-                  <form onSubmit={handleSendMessage} className="flex-1 flex items-center bg-[#07030f]/90 border border-white/10 rounded-full px-3 py-1.5 focus-within:border-vibe-neon-purple/40 transition-colors">
-                    <input 
-                      type="text"
-                      placeholder="Bate-papo..."
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      className="flex-1 bg-transparent text-xs text-white focus:outline-none pr-2"
-                    />
-                    <button 
-                      type="submit"
-                      disabled={!chatInput.trim()}
-                      className={cn(
-                        "p-1.5 rounded-full transition-all shrink-0",
-                        chatInput.trim() ? "bg-vibe-neon-purple text-white hover:scale-105" : "text-white/30 cursor-not-allowed"
-                      )}
-                    >
-                      <Send className="w-3 h-3" />
-                    </button>
-                  </form>
-
-                  <div className="flex items-center space-x-1 opacity-80 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setChatInput(prev => `${prev}@`)}
-                      className="p-1 px-1.5 text-white/70 hover:text-white"
-                      title="At"
-                    >
-                      <AtSign className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowStickerPanel(!showStickerPanel)}
-                      className={cn(
-                        "p-1 text-white/70 hover:text-white transition-colors",
-                        showStickerPanel ? "text-vibe-neon-pink" : ""
-                      )}
-                      title="Stickers"
-                    >
-                      <Image className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowStickerPanel(!showStickerPanel)}
-                      className="p-1 text-white/70 hover:text-white"
-                      title="Smileys"
-                    >
-                      <Smile className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleCopyLink}
-                      className="p-1 text-white/70 hover:text-white"
-                      title="Share"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
+                {/* Quick Emoji Reaction Strip (One-tap floating reaction + chat) */}
+                <div className="flex items-center justify-between px-3 py-1 border-t border-white/5 bg-[#090415]">
+                  <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar py-0.5">
+                    {CHAT_QUICK_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => {
+                          sendReaction(emoji);
+                          setChatInput(prev => `${prev} ${emoji}`.trim());
+                        }}
+                        className="text-sm p-1 rounded-lg hover:bg-white/10 hover:scale-125 transition-all cursor-pointer"
+                        title={`Reagir com ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
+                {/* Unified Chat Input Form */}
+                <form 
+                  onSubmit={handleSendMessage} 
+                  className="mx-3 mb-3 p-1.5 bg-[#070312] border border-white/10 rounded-2xl flex items-center space-x-1.5 shrink-0 focus-within:border-vibe-neon-pink/50 focus-within:shadow-glow-pink/20 transition-all"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowStickerPanel(!showStickerPanel)}
+                    className={cn(
+                      "p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer",
+                      showStickerPanel ? "text-vibe-neon-pink bg-vibe-neon-pink/15" : ""
+                    )}
+                    title="Figurinhas e GIFs"
+                  >
+                    <Smile className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setChatInput(prev => `${prev}@`)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                    title="Mencionar"
+                  >
+                    <AtSign className="w-3.5 h-3.5" />
+                  </button>
+
+                  <input 
+                    type="text"
+                    placeholder="Envie uma mensagem na resenha..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    className="flex-1 bg-transparent py-1.5 px-2 text-xs placeholder-slate-600 text-white focus:outline-none"
+                  />
+
+                  <button 
+                    type="submit"
+                    disabled={!chatInput.trim()}
+                    className={cn(
+                      "p-2 rounded-xl transition-all shrink-0 cursor-pointer",
+                      chatInput.trim() 
+                        ? "bg-gradient-to-r from-[#ff0055] to-vibe-neon-pink text-white shadow-glow hover:scale-105" 
+                        : "text-slate-600 cursor-not-allowed"
+                    )}
+                    title="Enviar"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+
               </div>
 
-              {/* MEMBERS LIST TAB (FOR BOTH) */}
+              {/* MEMBERS LIST TAB - Cleanly shown based on activeTab on Desktop & activeTabMobile on Mobile */}
               <div className={cn(
-                "flex-grow overflow-y-auto no-scrollbar p-3 space-y-2.5 min-h-0",
-                "md:block", // Always active on desktop if activeTab === 'users'
-                "md:hidden", // Controlled on mobile dynamically
-                (activeTab === 'users' && activeTabMobile === 'users') ? "block" : (activeTabMobile === 'users' ? "block" : "hidden")
+                "flex-grow overflow-y-auto custom-scrollbar p-3 space-y-2.5 min-h-0",
+                activeTab === 'users' ? "md:flex md:flex-col" : "md:hidden",
+                activeTabMobile === 'users' ? "flex flex-col" : "hidden"
               )}>
                 
-                <div className="text-[9px] font-black text-[#A296BD] uppercase tracking-wider mb-2 select-none">
-                  LOBBY COMPANIONS
+                <div className="flex items-center justify-between text-[9px] font-black text-[#A296BD] uppercase tracking-wider mb-1 select-none">
+                  <span>LOBBY COMPANIONS</span>
+                  <span className="text-vibe-neon-blue">{participants.length} ONLINE</span>
                 </div>
                 
                 {participants.length === 0 ? (
-                  <div className="text-center py-10 text-slate-500 text-xs">Apenas você na sala.</div>
+                  <div className="text-center py-12 text-slate-500 text-xs">Apenas você na sala.</div>
                 ) : (
                   participants.map((m) => {
                     const isLobbyHost = room?.host === m.uid;
+                    const isSelf = m.uid === currentUser?.uid;
+
                     return (
                       <div 
                         key={m.uid}
-                        className="bg-[#0b0717]/80 border border-white/5 rounded-xl p-2.5 flex items-center justify-between animate-fade-in"
+                        className={cn(
+                          "border rounded-xl p-2.5 flex items-center justify-between transition-all animate-fade-in",
+                          isSelf 
+                            ? "bg-vibe-neon-purple/10 border-vibe-neon-purple/30" 
+                            : "bg-[#070312] border-white/5 hover:border-white/10"
+                        )}
                       >
                         <div className="flex items-center space-x-2.5 min-w-0">
-                          <div className="relative">
-                            <img src={m.photoURL} className="w-8 h-8 rounded-lg object-cover border border-white/5" alt="" />
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#06020c] rounded-full" />
+                          <div className="relative shrink-0">
+                            <img src={m.photoURL} className="w-8 h-8 rounded-xl object-cover border border-white/10" alt="" />
+                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#06020c] rounded-full animate-pulse" />
                           </div>
                           <div className="min-w-0">
-                            <span className="text-[11px] font-bold text-slate-200 block truncate uppercase">
-                              {m.displayName}
-                            </span>
-                            <span className="text-[8px] text-slate-500 uppercase block">
-                              {isLobbyHost ? "ANFITRIÃO" : "PARTICIPANTE"}
+                            <div className="flex items-center space-x-1">
+                              <span className="text-[11px] font-black text-slate-200 block truncate uppercase">
+                                {m.displayName}
+                              </span>
+                              {isSelf && (
+                                <span className="text-[7px] px-1 py-0.2 bg-white/10 text-slate-300 rounded font-bold uppercase">
+                                  Você
+                                </span>
+                              )}
+                            </div>
+                            <span className={cn(
+                              "text-[8px] uppercase block font-bold",
+                              isLobbyHost ? "text-amber-400" : "text-slate-500"
+                            )}>
+                              {isLobbyHost ? "👑 Anfitrião" : "Participante"}
                             </span>
                           </div>
                         </div>
 
                         {isLobbyHost && (
-                          <Crown className="w-4 h-4 text-yellow-400 fill-yellow-400 shrink-0" />
+                          <Crown className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
                         )}
                       </div>
                     );
                   })
                 )}
+
+                {/* Invite squad bottom button */}
+                <div className="mt-auto pt-3 border-t border-white/5">
+                  <button
+                    onClick={handleCopyLink}
+                    className="w-full flex items-center justify-center space-x-2 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase tracking-wider text-slate-200 hover:text-white transition-all cursor-pointer"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-vibe-neon-blue" />
+                    <span>Convidar Squad</span>
+                  </button>
+                </div>
               </div>
 
             </div>

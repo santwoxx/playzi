@@ -43,7 +43,8 @@ export default function FloatingGrowthWidgets() {
 
   return (
     <>
-      <div className="fixed bottom-24 right-5 z-[80] hidden md:flex flex-col space-y-4 lg:bottom-10 lg:right-10">
+      {/* Hidden on desktop (lg:) because DesktopSidebar already provides Global Chat and Convidar Squad. Cleaned up to avoid fake notification clutter. */}
+      <div className="fixed bottom-24 right-5 z-[80] hidden md:flex lg:hidden flex-col space-y-4">
         {/* Global Chat Bubble */}
         {!isChatPage && (
           <motion.button
@@ -52,15 +53,10 @@ export default function FloatingGrowthWidgets() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => navigate('/chat/global')}
-            className="w-14 h-14 bg-vibe-neon-blue rounded-full shadow-[0_0_30px_rgba(0,242,255,0.4)] flex items-center justify-center text-vibe-bg relative group"
+            className="w-12 h-12 bg-vibe-neon-blue rounded-full shadow-[0_0_20px_rgba(0,242,255,0.3)] flex items-center justify-center text-vibe-bg relative group"
+            title="Chat Global"
           >
-            <MessageCircle className="w-7 h-7" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-pulse" />
-            
-            {/* Tooltip */}
-            <div className="absolute right-16 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-              <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Chat Global Ao Vivo</span>
-            </div>
+            <MessageCircle className="w-6 h-6" />
           </motion.button>
         )}
 
@@ -71,12 +67,10 @@ export default function FloatingGrowthWidgets() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowInviteOverlay(true)}
-          className="w-14 h-14 bg-vibe-gradient rounded-full shadow-[0_0_30px_rgba(255,0,255,0.3)] flex items-center justify-center text-white relative group"
+          className="w-12 h-12 bg-vibe-gradient rounded-full shadow-[0_0_20px_rgba(255,0,255,0.25)] flex items-center justify-center text-white relative group"
+          title="Squad"
         >
-          <Users className="w-7 h-7" />
-          <div className="absolute -top-6 -left-12 bg-vibe-neon-pink text-white text-[8px] font-black px-2 py-1 rounded-lg animate-bounce shadow-glow-pink whitespace-nowrap">
-            GANHE COINS E VIP! 💎
-          </div>
+          <Users className="w-6 h-6" />
         </motion.button>
       </div>
 

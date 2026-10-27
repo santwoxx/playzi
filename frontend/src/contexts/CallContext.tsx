@@ -5,6 +5,8 @@ import { Call } from '../types';
 import IncomingCallModal from '../components/IncomingCallModal';
 import CallScreen from '../components/CallScreen';
 
+import { soundService } from '../services/soundService';
+
 interface CallContextType {
   startCall: (receiverId: string, type?: 'voice' | 'video') => Promise<void>;
   endCall: () => Promise<void>;
@@ -22,21 +24,17 @@ const CallContext = createContext<CallContextType | undefined>(undefined);
 export function CallProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   const webRTC = useWebRTC(currentUser?.uid || '');
-  const [ringtone] = useState(() => {
-    const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/15/audio_51c6b1b702.mp3');
-    audio.loop = true;
-    audio.preload = 'none';
-    audio.crossOrigin = 'anonymous';
-    return audio;
-  });
 
   useEffect(() => {
     if (webRTC.isIncomingCall || (webRTC.isCalling && webRTC.currentCall?.status === 'calling')) {
-      ringtone.play().catch(e => console.log('Autoplay blocked:', e));
+      soundService.startLoop('call-ring');
     } else {
-      ringtone.pause();
-      ringtone.currentTime = 0;
+      soundService.stopLoop('call-ring');
     }
+
+    return () => {
+      soundService.stopLoop('call-ring');
+    };
   }, [webRTC.isIncomingCall, webRTC.isCalling, webRTC.currentCall?.status]);
 
   return (

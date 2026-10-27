@@ -24,14 +24,18 @@ export default function InstallPrompt() {
       e.preventDefault();
       setDeferredPrompt(e);
       
-      const isDismissed = localStorage.getItem('installPromptDismissed');
+      const isDismissed = localStorage.getItem('installPromptDismissed') === 'true';
       const lastPrompt = localStorage.getItem('installPromptLastShown');
       const now = Date.now();
       
-      // Delay initial show if eligible
-      const shouldShow = !isDismissed && (!lastPrompt || now - parseInt(lastPrompt) > 4 * 60 * 60 * 1000);
+      // Do not interrupt desktop PC users with full modal takeover
+      const isDesktop = window.innerWidth >= 1024;
+      if (isDesktop) return;
+
+      // Delay initial show on mobile if eligible
+      const shouldShow = !isDismissed && (!lastPrompt || now - parseInt(lastPrompt) > 24 * 60 * 60 * 1000);
       if (shouldShow) {
-        setTimeout(() => setIsVisible(true), 2000);
+        setTimeout(() => setIsVisible(true), 15000);
       }
     };
 
@@ -100,6 +104,7 @@ export default function InstallPrompt() {
     } else if (action === 'continue') {
       setIsMinimized(true);
       setIsVisible(false);
+      localStorage.setItem('installPromptDismissed', 'true');
     }
   };
 
@@ -242,12 +247,12 @@ export default function InstallPrompt() {
         )}
       </AnimatePresence>
 
-      {/* Persistent Mini Prompt if not installed and not currently showing full prompt */}
+      {/* Persistent Mini Prompt for mobile (hidden on desktop PC) */}
      {!isVisible && !installedSuccessfully && !isMinimized && !deferredPrompt && isIOS && (
           <motion.div 
            initial={{ y: 100 }}
            animate={{ y: 0 }}
-           className="fixed bottom-24 left-4 right-4 z-50 flex items-center space-x-2"
+           className="lg:hidden fixed bottom-24 left-4 right-4 z-50 flex items-center space-x-2"
           >
             <div 
              onClick={() => setIsVisible(true)}
@@ -265,7 +270,11 @@ export default function InstallPrompt() {
               <button className="bg-white/10 px-4 py-2 rounded-lg text-[10px] font-black text-white uppercase">Ver Como</button>
             </div>
             <button 
-              onClick={(e) => { e.stopPropagation(); setIsMinimized(true); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setIsMinimized(true);
+                localStorage.setItem('installPromptDismissed', 'true');
+              }}
               className="pointer-events-auto bg-white/5 p-4 rounded-2xl border border-vibe-border text-vibe-muted hover:text-white"
             >
               <X className="w-5 h-5" />
@@ -273,12 +282,12 @@ export default function InstallPrompt() {
           </motion.div>
        )}
 
-       {!isVisible && !installedSuccessfully && deferredPrompt && (
+       {!isVisible && !installedSuccessfully && deferredPrompt && localStorage.getItem('installPromptDismissed') !== 'true' && (
          <motion.div 
            initial={{ y: 100 }}
            animate={{ y: 0 }}
            className={cn(
-             "fixed z-50 transition-all duration-500 flex items-center space-x-2",
+             "lg:hidden fixed z-50 transition-all duration-500 flex items-center space-x-2",
              isMinimized ? "bottom-24 right-4" : "bottom-24 left-4 right-4"
            )}
          >

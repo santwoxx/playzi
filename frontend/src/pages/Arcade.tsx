@@ -100,9 +100,9 @@ export default function Arcade() {
 
         {/* Stats Summary */}
         <div className="grid grid-cols-3 gap-4">
-          <StatCard icon={<Trophy className="w-4 h-4" />} label={t('victories')} value={currentUser?.victories?.toString() || '12'} color="blue" />
-          <StatCard icon={<Zap className="w-4 h-4" />} label={t('streak')} value={currentUser?.streak?.toString() || '5'} color="pink" />
-          <StatCard icon={<Dices className="w-4 h-4" />} label={t('tickets')} value={currentUser?.tickets?.toString() || '150'} color="purple" />
+          <StatCard icon={<Trophy className="w-4 h-4" />} label={t('victories')} value={(currentUser?.victories ?? 0).toString()} color="blue" />
+          <StatCard icon={<Zap className="w-4 h-4" />} label={t('streak')} value={(currentUser?.streak ?? 0).toString()} color="pink" />
+          <StatCard icon={<Dices className="w-4 h-4" />} label={t('tickets')} value={(currentUser?.tickets ?? 0).toString()} color="purple" />
         </div>
 
         {/* Game List */}

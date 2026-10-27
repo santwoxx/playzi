@@ -7,6 +7,7 @@ import { MessageSquare, X, Heart, UserPlus, Zap, Bell, MessageCircle, Sparkles, 
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { requestNotificationPermission, getAndSaveFCMToken, setupMessageListener } from '../services/pushNotificationService';
+import { soundService } from '../services/soundService';
 
 interface UnifiedNotification {
   id: string;
@@ -30,9 +31,13 @@ export default function NotificationManager() {
     const checkNotificationStatus = async () => {
       if (!('Notification' in window)) return;
 
-      if (Notification.permission === 'default') {
-        // Delay pre-prompt for better experience
-        setTimeout(() => setShowPrePrompt(true), 10000);
+      const isDismissed = localStorage.getItem('playzi_notif_preprompt_dismissed') === 'true';
+      if (Notification.permission === 'default' && !isDismissed) {
+        // Only show prompt on mobile or after a relaxed delay, avoiding instant aggressive popups
+        const isDesktop = window.innerWidth >= 1024;
+        if (!isDesktop) {
+          setTimeout(() => setShowPrePrompt(true), 20000);
+        }
       } else if (Notification.permission === 'granted' && currentUser) {
         initNotifications();
       }
@@ -75,11 +80,21 @@ export default function NotificationManager() {
 
   const handlePermit = async () => {
     setShowPrePrompt(false);
+    try {
+      localStorage.setItem('playzi_notif_preprompt_dismissed', 'true');
+    } catch {}
     const granted = await requestNotificationPermission();
     if (granted && currentUser) {
       await getAndSaveFCMToken(currentUser.uid);
       claimNotifReward();
     }
+  };
+
+  const handleDismissPrePrompt = () => {
+    setShowPrePrompt(false);
+    try {
+      localStorage.setItem('playzi_notif_preprompt_dismissed', 'true');
+    } catch {}
   };
 
   // Existing listeners for in-app notifications
@@ -123,7 +138,7 @@ export default function NotificationManager() {
       console.warn("Global notifications snapshot listener caught safely:", error);
     });
 
-    // 2. Specialized listener for real-time chat messages (for faster response)
+    // 2. Specialized listener for real-time chat messages
     const chatsQuery = query(
       collection(db, 'chats'),
       where('participants', 'array-contains', currentUser.uid)
@@ -134,8 +149,10 @@ export default function NotificationManager() {
         if (change.type === 'modified') {
           const chatData = change.doc.data();
           if (chatData.lastMessage && chatData.updatedBy !== currentUser.uid) {
-            // Check if we should notify (could avoid double notification if using subcollection too)
-            // But usually chat needs to be instant.
+            // Avoid showing banner toast if user is already inside this chat
+            if (window.location.pathname === `/chat/${change.doc.id}`) {
+              return;
+            }
             const newChatNotif: UnifiedNotification = {
               id: `msg-${change.doc.id}-${chatData.updatedAt?.seconds || Date.now()}`,
               type: 'message',
@@ -159,25 +176,20 @@ export default function NotificationManager() {
   }, [currentUser]);
 
   const playNotificationSound = (type: string) => {
-    // Som futurista/gaming para notificações
-    let soundUrl = 'https://cdn.pixabay.com/audio/2022/03/15/audio_783d1a3825.mp3'; // Generic tech
-    
-    if (type === 'like') soundUrl = 'https://cdn.pixabay.com/audio/2021/11/24/audio_311d4d3856.mp3'; // Pop
-    if (type === 'follow') soundUrl = 'https://cdn.pixabay.com/audio/2022/01/18/audio_273898f98a.mp3'; // Level up
-    if (type === 'comment') soundUrl = 'https://cdn.pixabay.com/audio/2022/03/10/audio_c9769dae13.mp3'; // Message
-
-    try {
-      const audio = new Audio(soundUrl);
-      audio.volume = 0.5;
-      const playPromise = audio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.log("Audio play failed (waiting for user interaction):", error);
-        });
-      }
-    } catch (err) {
-      console.error('Audio object error:', err);
+    switch (type) {
+      case 'like':
+        soundService.play('pop');
+        break;
+      case 'follow':
+        soundService.play('levelup');
+        break;
+      case 'comment':
+      case 'message':
+        soundService.play('message');
+        break;
+      default:
+        soundService.play('notification');
+        break;
     }
   };
 
@@ -185,16 +197,21 @@ export default function NotificationManager() {
     setNotification(notif);
     playNotificationSound(notif.type);
 
-    // Browser standard notification (background/native feel)
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(notif.title, {
-        body: notif.content,
-        icon: notif.senderPhoto || 'https://i.ibb.co/svpJKdbx/playsi-logo.png'
-      });
+    // Browser standard notification: only trigger when document is hidden (background)
+    // so active users don't get double notifications on screen
+    if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(notif.title, {
+          body: notif.content,
+          icon: notif.senderPhoto || 'https://i.ibb.co/svpJKdbx/playsi-logo.png'
+        });
+      } catch (e) {
+        console.warn('Native notification failed:', e);
+      }
     }
 
-    // Auto-hide in-app notification
-    const timer = setTimeout(() => setNotification(null), 6000);
+    // Auto-hide in-app notification after 3.5s
+    const timer = setTimeout(() => setNotification(null), 3500);
     return () => clearTimeout(timer);
   };
 
@@ -211,7 +228,7 @@ export default function NotificationManager() {
 
   return (
     <AnimatePresence>
-      {/* Notification Pre-Prompt (DOPAMINE UI) */}
+      {/* Notification Pre-Prompt */}
       {showPrePrompt && (
         <motion.div
           initial={{ y: 200, opacity: 0 }}
@@ -267,8 +284,8 @@ export default function NotificationManager() {
                      Ativar Agora
                    </button>
                    <button 
-                    onClick={() => setShowPrePrompt(false)}
-                    className="px-4 py-4 bg-white/5 text-vibe-muted font-bold rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                    onClick={handleDismissPrePrompt}
+                    className="px-4 py-4 bg-white/5 text-vibe-muted font-bold rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all hover:text-white"
                    >
                      Ignorar
                    </button>
@@ -279,120 +296,70 @@ export default function NotificationManager() {
       )}
 
       {notification && (
-        <>
-          {/* Dopamine Sparkles for Followers */}
-          {notification.type === 'follow' && (
-            <div className="fixed inset-0 pointer-events-none z-[10000]">
-               {[...Array(12)].map((_, i) => (
-                 <motion.div
-                   key={i}
-                   initial={{ 
-                     opacity: 1, 
-                     scale: 0,
-                     x: '50vw',
-                     y: '20vh'
-                   }}
-                   animate={{ 
-                     opacity: 0, 
-                     scale: [1, 2, 1.5],
-                     x: `${Math.random() * 100}vw`,
-                     y: `${Math.random() * 100}vh`,
-                     rotate: 360
-                   }}
-                   transition={{ duration: 2, ease: "easeOut" }}
-                   className="absolute"
-                 >
-                   <Sparkles className="text-vibe-neon-blue w-8 h-8" />
-                 </motion.div>
-               ))}
-            </div>
-          )}
-
-          <motion.div
-            initial={{ y: -120, opacity: 0, scale: 0.5, rotate: -5 }}
-            animate={{ 
-              y: 0, 
-              opacity: 1, 
-              scale: 1, 
-              rotate: 0,
-              transition: {
-                type: 'spring',
-                damping: 12,
-                stiffness: 200
-              }
+        <motion.div
+          initial={{ y: -60, opacity: 0, scale: 0.95 }}
+          animate={{ 
+            y: 0, 
+            opacity: 1, 
+            scale: 1, 
+            transition: {
+              type: 'spring',
+              damping: 15,
+              stiffness: 220
+            }
+          }}
+          exit={{ y: -60, opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+          className="fixed top-4 left-4 right-4 z-[9999] max-w-sm mx-auto lg:top-6 lg:right-6 lg:left-auto lg:mx-0"
+        >
+          <div 
+            onClick={() => {
+              if (notification.link) navigate(notification.link);
+              setNotification(null);
             }}
-            exit={{ y: -120, opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-            className="fixed top-4 left-4 right-4 z-[9999] max-w-sm mx-auto"
+            className="bg-[#0c0d15]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center space-x-3.5 cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.8)] active:scale-95 transition-all hover:border-vibe-neon-blue/40 group overflow-hidden"
           >
-            {/* XP Float Effect */}
-            <motion.div
-              initial={{ opacity: 0, y: 0 }}
-              animate={{ opacity: [0, 1, 0], y: -50 }}
-              className="absolute -top-10 left-1/2 -translate-x-1/2 bg-vibe-gradient px-4 py-1 rounded-full shadow-lg"
-            >
-              <span className="text-white font-black text-[10px] uppercase tracking-widest">+10 XP</span>
-            </motion.div>
-
-            <div 
-              onClick={() => {
-                if (notification.link) navigate(notification.link);
-                setNotification(null);
-              }}
-              className="bg-black/80 backdrop-blur-3xl border-2 border-vibe-neon-blue/30 rounded-3xl p-5 flex items-center space-x-4 cursor-pointer shadow-[0_30px_60px_rgba(0,242,255,0.2)] active:scale-90 transition-all hover:border-vibe-neon-blue group overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-vibe-gradient opacity-0 group-hover:opacity-5 transition-opacity" />
-              
-              <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-2xl bg-vibe-gradient p-[1px] shadow-[0_0_20px_rgba(0,0,0,0.3)]">
-                  <img 
-                    src={notification.senderPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(notification.senderName || 'P')}&background=0D0E12&color=fff`} 
-                    className="w-full h-full rounded-2xl object-cover border-2 border-vibe-bg"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <motion.div 
-                  animate={{ 
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 10, -10, 0]
-                  }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-vibe-bg rounded-xl border border-white/10 flex items-center justify-center shadow-2xl z-10"
-                >
-                  {getIcon(notification.type)}
-                </motion.div>
+            <div className="relative shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-vibe-gradient p-[1px] shadow-[0_0_15px_rgba(0,0,0,0.3)]">
+                <img 
+                  src={notification.senderPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(notification.senderName || 'P')}&background=0D0E12&color=fff`} 
+                  className="w-full h-full rounded-xl object-cover border border-vibe-bg"
+                  referrerPolicy="no-referrer"
+                  alt={notification.senderName || 'Notification'}
+                />
               </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] font-black text-vibe-neon-blue uppercase tracking-widest flex items-center">
-                    <Star className="w-3 h-3 mr-1 fill-vibe-neon-blue" />
-                    {notification.title}
-                  </p>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setNotification(null);
-                    }}
-                    className="p-1 -mr-2 text-white/20 hover:text-white transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-white font-bold text-sm truncate leading-tight">{notification.content}</p>
-                <div className="flex items-center space-x-2 mt-2">
-                   <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: '100%' }}
-                        transition={{ duration: 6, ease: "linear" }}
-                        className="h-full bg-vibe-neon-blue"
-                      />
-                   </div>
-                </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-vibe-bg rounded-lg border border-white/10 flex items-center justify-center shadow z-10 scale-75">
+                {getIcon(notification.type)}
               </div>
             </div>
-          </motion.div>
-        </>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-0.5">
+                <p className="text-[10px] font-black text-vibe-neon-blue uppercase tracking-wider flex items-center truncate">
+                  {notification.title}
+                </p>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setNotification(null);
+                  }}
+                  className="p-1 -mr-1 text-white/40 hover:text-white transition-colors"
+                  title="Fechar"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <p className="text-white font-bold text-xs truncate leading-snug">{notification.content}</p>
+              <div className="h-0.5 bg-white/10 rounded-full overflow-hidden mt-2">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 3.5, ease: "linear" }}
+                  className="h-full bg-vibe-neon-blue"
+                />
+              </div>
+            </div>
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
