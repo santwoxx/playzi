@@ -1,26 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
-import { collection, getDocs, addDoc, serverTimestamp, query, limit } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { Community } from '../types';
-import { useAuth } from '../contexts/AuthContext';
-import { motion, AnimatePresence } from 'motion/react';
-import { Gamepad, Search, Users, ChevronRight, MessageCircle, Mic, Plus, X, Sparkles, Globe } from 'lucide-react';
-
-const COMMUNITY_CATEGORIES = [
-  { id: 'freefire', name: 'Free Fire', logo: 'https://i.ibb.co/mVw25trf/ff-logo.png', desc: 'A maior comunidade mobile' },
-  { id: 'roblox', name: 'Roblox', logo: 'https://i.ibb.co/Q7PT39JL/logoroblox.png', desc: 'Crie e jogue com amigos' },
-  { id: 'minecraft', name: 'Minecraft', logo: 'https://i.ibb.co/M55fSgjS/minelogo.png', desc: 'Construção e aventura' },
-  { id: 'dating', name: 'Namoro', logo: 'https://i.ibb.co/XrHdBQb5/namoro-logo.png', desc: 'Encontre o player 2 do seu coração', trending: true },
-  { id: 'friendship', name: 'Amizade', logo: 'https://i.ibb.co/NdkQ5dcY/amizade.jpg', desc: 'Sua nova família gamer te espera' }
-];
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import SEO from '../components/SEO';
 import { collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { Community } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Users, ChevronRight, Plus, X, Sparkles, Globe, Gamepad2, Heart, Flame, Shield, Check } from 'lucide-react';
